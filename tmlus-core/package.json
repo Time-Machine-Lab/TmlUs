@@ -1,0 +1,40 @@
+{
+  "name": "@time-machine-lab/tmlus",
+  "version": "0.1.0",
+  "description": "TML AI development workspace initializer and toolkit.",
+  "type": "module",
+  "bin": {
+    "tmlus": "bin/tmlus.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check:banner": "npm run build && node scripts/check-banner.mjs",
+    "check:commands": "npm run build && node scripts/check-commands.mjs",
+    "check:guidelines": "npm run build && node scripts/check-dev-guidelines.mjs",
+    "start": "node ./bin/tmlus.js"
+  },
+  "keywords": [
+    "ai",
+    "cli",
+    "tml",
+    "developer-tools",
+    "openspec"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.25",
+    "typescript": "^5.9.3"
+  }
+}

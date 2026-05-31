@@ -1,0 +1,117 @@
+import type { SkillDefinition, SkillInstallTarget } from '../core/types.js';
+
+export const COMMON_SKILL_TARGETS: SkillInstallTarget[] = [
+  { environmentId: 'codex', targetType: 'skills' },
+  { environmentId: 'claude', targetType: 'skills' },
+  { environmentId: 'cursor', targetType: 'skills' },
+  { environmentId: 'trae', targetType: 'skills' },
+  { environmentId: 'codebuddy', targetType: 'skills' }
+];
+
+export const SKILL_CATALOG: SkillDefinition[] = [
+  {
+    id: 'skill-creator',
+    name: 'Skill Creator',
+    source: 'github:anthropics/skills/skills/skill-creator',
+    category: 'Skill创作',
+    description: '创建、评估和持续优化 AI Skill，适合沉淀团队自己的工作流能力。',
+    installer: {
+      strategy: 'github-directory'
+    },
+    targets: COMMON_SKILL_TARGETS
+  },
+  {
+    id: 'tml-docs-spec-generate',
+    name: 'TML Docs Spec Generate',
+    source: 'github:Time-Machine-Lab/TML-Skills/skills/tml-docs-spec-generate',
+    category: 'TML规范',
+    description: '基于 TML-Docs-Spec 模板生成项目概念、架构设计、开发规范等标准化文档。',
+    installer: {
+      strategy: 'github-directory'
+    },
+    targets: COMMON_SKILL_TARGETS
+  },
+  {
+    id: 'frontend-slides',
+    name: 'Frontend Slides',
+    source: 'github:zarazhangrui/frontend-slides',
+    category: '前端开发',
+    description: '生成高质量 HTML 演示文稿，并支持 PPT 转 Web、样式探索和导出脚本。',
+    installer: {
+      strategy: 'github-root-skill',
+      includePaths: [
+        'SKILL.md',
+        'README.md',
+        'STYLE_PRESETS.md',
+        'viewport-base.css',
+        'html-template.md',
+        'animation-patterns.md',
+        'bold-template-pack',
+        'scripts/extract-pptx.py',
+        'scripts/deploy.sh',
+        'scripts/export-pdf.sh'
+      ]
+    },
+    targets: COMMON_SKILL_TARGETS
+  },
+  {
+    id: 'gsap-skills',
+    aliases: ['gsap'],
+    name: 'GSAP Skills',
+    source: 'github:greensock/gsap-skills',
+    category: '前端开发',
+    description: '安装 GSAP 官方技能集合，覆盖核心 API、时间线、ScrollTrigger、框架集成和性能实践。',
+    installer: {
+      strategy: 'github-skill-bundle',
+      bundleDirectory: 'skills'
+    },
+    targets: COMMON_SKILL_TARGETS
+  },
+  {
+    id: 'html-anything',
+    aliases: ['html-anythins'],
+    name: 'Html Anything',
+    source: 'github:nexu-io/html-anything',
+    category: '前端开发',
+    description: '安装 HTML Anything 模板技能集合，用于生成网页原型、演示、海报、报告和社媒卡片等 HTML 交付物。',
+    installer: {
+      strategy: 'github-skill-bundle',
+      bundleDirectory: 'next/src/lib/templates/skills'
+    },
+    targets: COMMON_SKILL_TARGETS
+  },
+  {
+    id: 'design-extract',
+    aliases: ['extract-design'],
+    name: 'Design Extract',
+    source: 'github:Manavarya09/design-extract/skills/extract-design',
+    category: '前端开发',
+    description: '从线上站点抽取设计语言、设计 Token、Tailwind/shadcn 主题和可复用前端提示词。',
+    installer: {
+      strategy: 'github-directory'
+    },
+    targets: COMMON_SKILL_TARGETS
+  },
+  {
+    id: 'db-skills',
+    aliases: ['dbskill', 'dontbesilent'],
+    name: 'DB Skills',
+    source: 'github:dontbesilent2025/dbskill',
+    category: '商业方法论',
+    description: '安装 dontbesilent 商业方法论技能集合，覆盖商业诊断、对标、内容、决策和执行力等场景。',
+    installer: {
+      strategy: 'github-skill-bundle',
+      bundleDirectory: 'skills'
+    },
+    targets: COMMON_SKILL_TARGETS
+  }
+];
+
+export function findSkillById(id: string): SkillDefinition | undefined {
+  const normalized = id.trim().toLowerCase();
+  return SKILL_CATALOG.find((skill) => skill.id === normalized || skill.aliases?.includes(normalized));
+}
+
+export function supportedSkillIds(): string {
+  return SKILL_CATALOG.map((skill) => skill.id).join(', ');
+}

@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TmlUs Banner Preview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #251835;
+      --panel: rgba(36, 21, 54, 0.78);
+      --line: rgba(255, 255, 255, 0.18);
+      --pink: #ff8fd8;
+      --rose: #ffcedf;
+      --aqua: #88f7ff;
+      --mint: #aaffd8;
+      --violet: #c5a1ff;
+      --gold: #ffe681;
+      --white: #fff8ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+      font-family: Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at 18% 14%, rgba(255, 143, 216, 0.34), transparent 28%),
+        radial-gradient(circle at 82% 20%, rgba(136, 247, 255, 0.28), transparent 24%),
+        radial-gradient(circle at 50% 88%, rgba(255, 230, 129, 0.18), transparent 32%),
+        linear-gradient(135deg, #221333 0%, #35205a 42%, #183f5d 100%);
+      color: var(--white);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 38px 38px;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), transparent);
+    }
+
+    .page {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 34px 0 42px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 900;
+      letter-spacing: 0;
+      line-height: 1.05;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: rgba(255, 248, 255, 0.72);
+      font-size: 15px;
+    }
+
+    .badge {
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.1);
+      padding: 10px 13px;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 13px;
+      color: var(--mint);
+      box-shadow: 0 0 24px rgba(136, 247, 255, 0.12);
+    }
+
+    .stage {
+      position: relative;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.05));
+      padding: 16px;
+      box-shadow:
+        0 24px 80px rgba(0, 0, 0, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      overflow: hidden;
+    }
+
+    .stage::before,
+    .stage::after {
+      content: "";
+      position: absolute;
+      width: 190px;
+      height: 190px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      transform: rotate(18deg);
+      pointer-events: none;
+    }
+
+    .stage::before {
+      right: -76px;
+      top: -96px;
+      background: rgba(255, 143, 216, 0.12);
+    }
+
+    .stage::after {
+      left: -110px;
+      bottom: -112px;
+      background: rgba(136, 247, 255, 0.12);
+    }
+
+    .terminal {
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 22%),
+        var(--panel);
+      overflow: hidden;
+      backdrop-filter: blur(18px);
+    }
+
+    .terminal::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.055),
+        rgba(255, 255, 255, 0.055) 1px,
+        transparent 1px,
+        transparent 5px
+      );
+      mix-blend-mode: screen;
+      opacity: 0.34;
+    }
+
+    .terminal::after {
+      content: "";
+      position: absolute;
+      left: -30%;
+      top: 0;
+      width: 34%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+      animation: shimmer 5.5s linear infinite;
+      pointer-events: none;
+    }
+
+    .chrome {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 42px;
+      padding: 0 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(20, 11, 32, 0.42);
+      font-family: "Cascadia Mono", Consolas, monospace;
+      color: rgba(255, 248, 255, 0.66);
+      font-size: 12px;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 16px currentColor;
+    }
+
+    .dot:nth-child(1) {
+      color: #ff8aa7;
+      background: #ff8aa7;
+    }
+
+    .dot:nth-child(2) {
+      color: #ffe681;
+      background: #ffe681;
+    }
+
+    .dot:nth-child(3) {
+      color: #9affc9;
+      background: #9affc9;
+      margin-right: 10px;
+    }
+
+    .terminal-body {
+      position: relative;
+      min-height: 540px;
+      padding: clamp(18px, 3.2vw, 34px);
+    }
+
+    .spark {
+      position: absolute;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      color: var(--gold);
+      filter: drop-shadow(0 0 10px rgba(255, 230, 129, 0.9));
+      animation: floaty 3.8s ease-in-out infinite;
+      opacity: 0.86;
+    }
+
+    .spark.s1 { top: 48px; left: 7%; animation-delay: 0s; }
+    .spark.s2 { top: 98px; right: 11%; color: var(--aqua); animation-delay: 0.7s; }
+    .spark.s3 { bottom: 120px; left: 10%; color: var(--pink); animation-delay: 1.2s; }
+    .spark.s4 { bottom: 72px; right: 8%; color: var(--mint); animation-delay: 1.9s; }
+
+    .ascii-wrap {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 310px;
+      margin: 12px 0 8px;
+    }
+
+    .halo {
+      position: absolute;
+      width: min(620px, 84%);
+      aspect-ratio: 1 / 0.32;
+      border: 2px solid rgba(255, 206, 223, 0.26);
+      border-radius: 50%;
+      transform: rotate(-6deg);
+      box-shadow:
+        0 0 28px rgba(255, 143, 216, 0.26),
+        inset 0 0 32px rgba(136, 247, 255, 0.14);
+      animation: haloPulse 2.8s ease-in-out infinite;
+    }
+
+    .ribbon {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-2deg);
+      color: var(--ink);
+      background: linear-gradient(90deg, var(--mint), var(--gold), var(--pink));
+      padding: 6px 18px;
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      box-shadow: 0 10px 30px rgba(255, 143, 216, 0.26);
+    }
+
+    .ribbon::before,
+    .ribbon::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      background: inherit;
+      transform: translateY(-50%) rotate(45deg);
+      z-index: -1;
+    }
+
+    .ribbon::before { left: -7px; }
+    .ribbon::after { right: -7px; }
+
+    pre.logo {
+      position: relative;
+      z-index: 1;
+      margin: 54px 0 10px;
+      font-family: "Cascadia Mono", "Fira Code", Consolas, monospace;
+      font-weight: 900;
+      font-size: clamp(12px, 2vw, 24px);
+      line-height: 1.05;
+      letter-spacing: 0;
+      color: transparent;
+      background: linear-gradient(90deg, var(--aqua), var(--white), var(--pink), var(--gold), var(--aqua));
+      background-size: 280% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      text-shadow:
+        0 0 22px rgba(255, 143, 216, 0.42),
+        0 0 36px rgba(136, 247, 255, 0.28);
+      animation: textGlow 2.7s ease-in-out infinite, gradientRun 4.6s linear infinite;
+      white-space: pre;
+    }
+
+    .logo-shadow {
+      position: absolute;
+      z-index: 0;
+      margin-top: 62px;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: clamp(12px, 2vw, 24px);
+      line-height: 1.05;
+      font-weight: 900;
+      color: rgba(255, 143, 216, 0.12);
+      transform: translate(10px, 10px);
+      filter: blur(1px);
+      white-space: pre;
+    }
+
+    .console-lines {
+      width: min(760px, 100%);
+      margin: 0 auto;
+      font-family: "Cascadia Mono", "Fira Code", Consolas, monospace;
+      font-size: clamp(12px, 1.7vw, 15px);
+      line-height: 1.8;
+      color: rgba(255, 248, 255, 0.82);
+    }
+
+    .line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .prompt {
+      color: var(--mint);
+      text-shadow: 0 0 12px rgba(170, 255, 216, 0.4);
+    }
+
+    .accent-pink { color: var(--pink); }
+    .accent-aqua { color: var(--aqua); }
+    .accent-gold { color: var(--gold); }
+    .muted { color: rgba(255, 248, 255, 0.54); }
+
+    .type {
+      overflow: hidden;
+      white-space: nowrap;
+      border-right: 8px solid var(--pink);
+      width: 0;
+      animation: typing 2.8s steps(42, end) 0.35s forwards, caret 0.7s step-end infinite;
+    }
+
+    .progress {
+      margin-top: 10px;
+      height: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .progress span {
+      display: block;
+      width: 68%;
+      height: 100%;
+      background:
+        repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.34) 8px, transparent 8px, transparent 16px),
+        linear-gradient(90deg, var(--aqua), var(--pink), var(--gold));
+      animation: loading 2.2s ease-in-out infinite;
+      box-shadow: 0 0 18px rgba(255, 143, 216, 0.45);
+    }
+
+    .options {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .option {
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.08);
+      padding: 12px;
+      min-height: 94px;
+    }
+
+    .option strong {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--white);
+      font-size: 14px;
+    }
+
+    .option span {
+      color: rgba(255, 248, 255, 0.66);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .note {
+      margin-top: 16px;
+      color: rgba(255, 248, 255, 0.68);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    @keyframes typing {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+
+    @keyframes caret {
+      50% { border-color: transparent; }
+    }
+
+    @keyframes textGlow {
+      0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
+      50% { transform: translateY(-5px) scale(1.018); filter: brightness(1.16); }
+    }
+
+    @keyframes gradientRun {
+      from { background-position: 0% 50%; }
+      to { background-position: 280% 50%; }
+    }
+
+    @keyframes haloPulse {
+      0%, 100% { opacity: 0.62; transform: rotate(-6deg) scale(1); }
+      50% { opacity: 1; transform: rotate(-4deg) scale(1.06); }
+    }
+
+    @keyframes floaty {
+      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.58; }
+      50% { transform: translateY(-16px) rotate(8deg); opacity: 1; }
+    }
+
+    @keyframes loading {
+      0% { width: 12%; background-position: 0 0; }
+      55% { width: 86%; }
+      100% { width: 100%; background-position: 48px 0; }
+    }
+
+    @keyframes shimmer {
+      from { transform: translateX(0); }
+      to { transform: translateX(420%); }
+    }
+
+    @media (max-width: 760px) {
+      .topbar {
+        display: block;
+      }
+
+      .badge {
+        display: inline-block;
+        margin-top: 14px;
+      }
+
+      .stage {
+        padding: 9px;
+      }
+
+      .terminal-body {
+        min-height: 500px;
+        padding: 18px 12px 20px;
+      }
+
+      .options {
+        grid-template-columns: 1fr;
+      }
+
+      pre.logo,
+      .logo-shadow {
+        font-size: 9px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div>
+        <h1>TmlUs 启动 Banner 视觉预览</h1>
+        <p class="subtitle">探索稿：卡哇伊二次元终端风，后续可转为真实 CLI ANSI 动效。</p>
+      </div>
+      <div class="badge">preview / kawaii-terminal-v1</div>
+    </div>
+
+    <section class="stage" aria-label="TmlUs command line banner preview">
+      <div class="terminal">
+        <div class="chrome">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span>tmlus.exe --wake-up</span>
+        </div>
+
+        <div class="terminal-body">
+          <span class="spark s1">✦</span>
+          <span class="spark s2">◇</span>
+          <span class="spark s3">✧</span>
+          <span class="spark s4">+</span>
+
+          <div class="ascii-wrap">
+            <div class="halo"></div>
+            <div class="ribbon">TML AI DEV ATELIER</div>
+            <pre class="logo-shadow" aria-hidden="true">████████╗ ███╗   ███╗ ██╗
+╚══██╔══╝ ████╗ ████║ ██║
+   ██║    ██╔████╔██║ ██║
+   ██║    ██║╚██╔╝██║ ██║
+   ██║    ██║ ╚═╝ ██║ ███████╗
+   ╚═╝    ╚═╝     ╚═╝ ╚══════╝</pre>
+            <pre class="logo">████████╗ ███╗   ███╗ ██╗
+╚══██╔══╝ ████╗ ████║ ██║
+   ██║    ██╔████╔██║ ██║
+   ██║    ██║╚██╔╝██║ ██║
+   ██║    ██║ ╚═╝ ██║ ███████╗
+   ╚═╝    ╚═╝     ╚═╝ ╚══════╝</pre>
+          </div>
+
+          <div class="console-lines">
+            <div class="line">
+              <span class="prompt">tmlus</span>
+              <span class="muted">></span>
+              <span class="type">正在召唤 TML AI 开发工作台...</span>
+            </div>
+            <div class="line">
+              <span class="accent-pink">◇</span>
+              <span>profile:</span>
+              <span class="accent-aqua">kawaii-spec-driven</span>
+              <span class="muted">/</span>
+              <span>skills, commands, specs are twinkling</span>
+            </div>
+            <div class="line">
+              <span class="accent-gold">✦</span>
+              <span>status:</span>
+              <span class="accent-pink">TML workspace is warming up</span>
+            </div>
+            <div class="progress" aria-hidden="true"><span></span></div>
+
+            <div class="options">
+              <div class="option">
+                <strong>视觉关键词</strong>
+                <span>魔法少女启动界面、粉蓝糖果光、终端扫描线、像素星光。</span>
+              </div>
+              <div class="option">
+                <strong>CLI 转译方式</strong>
+                <span>可拆成 6-8 帧 ANSI 文本，逐帧刷新 TML 字标和进度条。</span>
+              </div>
+              <div class="option">
+                <strong>气质控制</strong>
+                <span>可继续往更萌、更酷、更赛博或更简洁专业的方向收敛。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="note">
+      这个 HTML 只用于探索预览。真正接入 CLI 时，可以把视觉拆成 ANSI 颜色、字符帧、启动文本和非 TTY 降级版本。
+    </p>
+  </main>
+</body>
+</html>

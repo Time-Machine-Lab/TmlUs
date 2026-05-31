@@ -1,0 +1,41 @@
+schema: spec-driven
+
+context: |
+  TmlUs is the TML team's local-first AI Helper / AI Tools toolbox.
+  It provides project initialization, AI IDE environment capability installation,
+  TML convention sync, external tool detection, and local project diagnostics.
+
+  Always use these project context files when creating or applying OpenSpec artifacts:
+  - docs/TmlUs项目概念介绍文档.md: product concept, target users, scope, and non-goals.
+  - docs/design/*.md: top-level architecture, module boundaries, runtime flows, and trade-offs.
+  - docs/spec/**/*.md: development guidelines and implementation constraints.
+  - docs/spec/DESIGN.md: CLI visual language and output degradation rules.
+
+  Product boundary:
+  - TmlUs is not a hosted platform and will not introduce server-side accounts,
+    remote dashboards, databases, or API services.
+  - Codex, Claude, Cursor, Gemini, OpenCode, and Trae are user AI IDE environments.
+  - OpenSpec, spec-kit, harness, codegraph, npm, Git, and remote repositories are external tools
+    or resource sources.
+
+rules:
+  proposal:
+    - Ground the proposal in docs/TmlUs项目概念介绍文档.md before defining scope.
+    - Include explicit non-goals when a change might drift toward platformization, hosted services, accounts, databases, or API contracts.
+    - If a change affects architecture or implementation boundaries, reference docs/design/*.md and docs/spec/**/*.md.
+  design:
+    - Read docs/design/*.md before making architecture decisions.
+    - Keep architecture decisions local-first, CLI-first, Recipe-driven, Environment-adaptive, and Catalog-based unless a proposal explicitly changes that boundary.
+    - Do not classify Codex, Claude, Cursor, Gemini, OpenCode, or Trae as external tools; they are AI IDE environments.
+    - Do not introduce platform services, account systems, hosted dashboards, databases, or API servers unless a future approved concept document changes the product boundary.
+  specs:
+    - Requirements must be traceable to the TmlUs concept document and relevant architecture/development docs.
+    - Specs that affect CLI output must include behavior compatible with docs/spec/DESIGN.md, including quiet/no-banner, CI, non-TTY, JSON, and no-color modes.
+  tasks:
+    - If tasks involve code implementation, include reading docs/spec/**/*.md as a prerequisite.
+    - If tasks involve CLI output, include compliance with docs/spec/DESIGN.md.
+    - If tasks involve file writes, include safe write behavior: conflict detection, force/dry-run expectations, and idempotency.
+  apply:
+    - Before writing code, read relevant docs/spec/**/*.md and follow the documented module boundaries.
+    - Before implementing CLI output, read docs/spec/DESIGN.md and preserve machine-readable, CI, non-TTY, quiet, and no-banner behavior.
+    - All project file writes must go through the workspace/file-writing boundary defined by the development guidelines.
