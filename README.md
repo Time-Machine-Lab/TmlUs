@@ -79,3 +79,16 @@ tmlus --work-mode openspec --ide codex
 ```
 
 预期结果：终端会输出初始化摘要；当前项目中会出现或修复对应目录、配置和 Skill 文件。小小工作台，就绪啦。
+
+## 常见问题 (FAQ)
+
+**Q: 使用 `npm install -g @time-machine-lab/tmlus` 时报错 404 Not Found (npmmirror)?**
+
+**A:** 这是因为如果你配置了淘宝镜像源 (`npmmirror`)，而包刚刚发布，镜像源可能还未同步。你可以通过以下方式快速解决：
+
+- **方式一（推荐）**：临时使用 npm 官方源安装
+  ```bash
+  npm install -g @time-machine-lab/tmlus --registry=https://registry.npmjs.org/
+  ```
+- **方式二**：前往 [npmmirror 页面](https://npmmirror.com/sync/@time-machine-lab/tmlus) 手动点击“同步”，等待同步完成后再次尝试安装。
+
