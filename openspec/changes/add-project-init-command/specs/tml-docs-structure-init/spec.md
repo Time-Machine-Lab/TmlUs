@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: TML Docs structure command
-TmlUs SHALL provide `tmlus --tml-spec` as a standalone command for initializing the standard TML Docs folder structure in the selected project root.
+TmlUs SHALL provide `tmlus tml-spec` as a standalone command for initializing the standard TML Docs folder structure in the selected project root.
 
 The command MUST create or verify these project-root-relative directories:
 
@@ -13,7 +13,7 @@ The command MUST create or verify these project-root-relative directories:
 - `docs/spec`
 
 #### Scenario: User initializes TML Docs structure
-- **WHEN** the user runs `tmlus --tml-spec`
+- **WHEN** the user runs `tmlus tml-spec`
 - **THEN** TmlUs creates the standard TML Docs directories under the current project root
 - **AND** it reports created and existing directories
 
@@ -27,11 +27,11 @@ TmlUs SHALL preserve `.gitkeep` files for the standard TML Docs structure.
 Each standard TML Docs directory MUST contain a `.gitkeep` file after successful initialization unless an existing non-directory path blocks creation.
 
 #### Scenario: Gitkeep files are created
-- **WHEN** the user runs `tmlus --tml-spec` in a project without TML Docs directories
+- **WHEN** the user runs `tmlus tml-spec` in a project without TML Docs directories
 - **THEN** each standard TML Docs directory contains a `.gitkeep` file
 
 #### Scenario: Existing gitkeep files are preserved
-- **WHEN** the user runs `tmlus --tml-spec` in a project where `.gitkeep` files already exist
+- **WHEN** the user runs `tmlus tml-spec` in a project where `.gitkeep` files already exist
 - **THEN** TmlUs leaves the existing `.gitkeep` files in place
 - **AND** it does not duplicate or overwrite unrelated files
 
@@ -42,16 +42,16 @@ The command MUST be idempotent and safe to run multiple times.
 
 #### Scenario: Missing subdirectory is repaired
 - **WHEN** the project contains `docs` but lacks `docs/sql`
-- **THEN** `tmlus --tml-spec` creates `docs/sql`
+- **THEN** `tmlus tml-spec` creates `docs/sql`
 - **AND** it creates `docs/sql/.gitkeep`
 
 #### Scenario: Repeated command is idempotent
-- **WHEN** the user runs `tmlus --tml-spec` twice in the same project
+- **WHEN** the user runs `tmlus tml-spec` twice in the same project
 - **THEN** the second run reports existing directories and files
 - **AND** it does not create duplicate content
 
 ### Requirement: TML Docs path safety
-TmlUs SHALL scope all `tmlus --tml-spec` writes to the selected project root.
+TmlUs SHALL scope all `tmlus tml-spec` writes to the selected project root.
 
 If a target path would resolve outside the selected project root, TmlUs MUST refuse the write and report the problem.
 
@@ -66,6 +66,6 @@ TmlUs TML Docs structure output SHALL comply with `docs/spec/DESIGN.md`.
 The command MUST keep status text explicit and MUST suppress decorative output in CI, non-TTY, `--quiet`, and machine-oriented modes.
 
 #### Scenario: Quiet TML Docs initialization
-- **WHEN** the user runs `tmlus --tml-spec --quiet`
+- **WHEN** the user runs `tmlus tml-spec --quiet`
 - **THEN** TmlUs suppresses decorative output
 - **AND** it still exits according to whether initialization succeeded

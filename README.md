@@ -14,16 +14,19 @@ TmlUs 是 TML 团队的 AI 开发工作台。它把项目初始化、AI IDE 环�
 
 ## 功能魔法书
 
+完整命令说明见 [TmlUs 命令 Wiki](docs/TmlUs命令Wiki.md)。
+
 | 入口 | 它会做什么 | 适合什么时候使用 |
 |------|------------|------------------|
 | `tmlus init` | 按步骤引导初始化项目工作区、AI IDE、TML Docs、Skills 和工作模式 | 新项目开局，想一次性把基础设施摆整齐 |
-| `tmlus --ide` | 检测并初始化 Codex、Claude Code、Cursor、Trae、CodeBuddy 等 AI IDE 所需目录 | 给当前项目补齐 AI IDE 协作环境 |
-| `tmlus --tml-spec` | 创建或修复 `docs/`、`docs/design/`、`docs/spec/` 等 TML 文档目录 | 项目需要接入 TML 文档规范 |
-| `tmlus --skills` | 浏览、选择并安装 TML 维护的 AI Skills | 想给 Agent 装上团队认可的能力包 |
-| `tmlus --skills search` | 从远程来源搜索可安装 Skill | 本地目录不够用，想探索新的 Skill |
-| `tmlus --work-mode openspec` | 为当前项目初始化 OpenSpec 工作模式 | 需要用提案、规格和任务驱动开发 |
-| `tmlus --help` | 查看所有命令说明和示例 | 忘记咒语时快速翻书 |
-| `tmlus --version` | 输出当前 CLI 版本 | 检查本地安装版本 |
+| `tmlus ide` | 检测并初始化 Codex、Claude Code、Cursor、Trae、CodeBuddy 等 AI IDE 所需目录 | 给当前项目补齐 AI IDE 协作环境 |
+| `tmlus tml-spec` | 创建或修复 `docs/`、`docs/design/`、`docs/spec/` 等 TML 文档目录 | 项目需要接入 TML 文档规范 |
+| `tmlus skills` | 浏览、选择并安装 TML 维护的 AI Skills | 想给 Agent 装上团队认可的能力包 |
+| `tmlus skills search` | 从远程来源搜索可安装 Skill | 本地目录不够用，想探索新的 Skill |
+| `tmlus tools` | 浏览并安装 TmlUs 维护的外部工具适配，例如 CodeGraph | 想给 Agent 接入本地代码索引或外部工具 |
+| `tmlus work-mode openspec` | 为当前项目初始化 OpenSpec 工作模式 | 需要用提案、规格和任务驱动开发 |
+| `tmlus help` | 查看所有命令说明和示例 | 忘记咒语时快速翻书 |
+| `tmlus version` | 输出当前 CLI 版本 | 检查本地安装版本 |
 
 ## 快速开始
 
@@ -37,11 +40,11 @@ TmlUs 是 TML 团队的 AI 开发工作台。它把项目初始化、AI IDE 环�
 
 ```bash
 # 不安装到全局，直接召唤一次
-npx @time-machine-lab/tmlus --help
+npx @time-machine-lab/tmlus help
 
 # 或者安装为全局命令
 npm install -g @time-machine-lab/tmlus
-tmlus --help
+tmlus help
 ```
 
 ### 从源码运行
@@ -51,7 +54,7 @@ git clone https://github.com/Time-Machine-Lab/TmlUs.git
 cd TmlUs/tmlus-core
 npm ci
 npm run build
-npm start -- --help
+npm start -- help
 ```
 
 ### 初始化一个项目
@@ -66,16 +69,16 @@ tmlus init
 
 ```bash
 # 初始化 TML 文档目录
-tmlus --tml-spec
+tmlus tml-spec
 
 # 为 Codex 和 Cursor 准备 AI IDE 环境
-tmlus --ide codex,cursor
+tmlus ide codex,cursor
 
 # 安装指定 Skill
-tmlus --skills tml-docs-spec-generate --ide codex
+tmlus skills tml-docs-spec-generate --ide codex
 
 # 初始化 OpenSpec 工作模式
-tmlus --work-mode openspec --ide codex
+tmlus work-mode openspec --ide codex
 ```
 
 预期结果：终端会输出初始化摘要；当前项目中会出现或修复对应目录、配置和 Skill 文件。小小工作台，就绪啦。
@@ -91,4 +94,3 @@ tmlus --work-mode openspec --ide codex
   npm install -g @time-machine-lab/tmlus --registry=https://registry.npmjs.org/
   ```
 - **方式二**：前往 [npmmirror 页面](https://npmmirror.com/sync/@time-machine-lab/tmlus) 手动点击“同步”，等待同步完成后再次尝试安装。
-

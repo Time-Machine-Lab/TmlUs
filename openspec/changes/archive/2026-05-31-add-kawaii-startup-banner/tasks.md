@@ -23,8 +23,8 @@
 ## 4. CLI Integration
 
 - [x] 4.1 Integrate banner rendering into the default interactive `tmlus` startup path.
-- [x] 4.2 Keep `tmlus --version` plain and free of banner output.
-- [x] 4.3 Ensure `tmlus --help` remains readable with banner enabled, static, or suppressed.
+- [x] 4.2 Keep `tmlus version` plain and free of banner output.
+- [x] 4.3 Ensure `tmlus help` remains readable with banner enabled, static, or suppressed.
 - [x] 4.4 Preserve existing preview CLI behavior apart from the approved presentation layer.
 
 ## 5. Verification

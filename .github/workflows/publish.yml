@@ -6,7 +6,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   publish:
@@ -27,3 +27,25 @@ jobs:
           tag_prefix: v
           registry_url: ${{ secrets.NPM_REGISTRY_URL }}
           npm_token: ${{ secrets.NPM_TOKEN }}
+
+      - name: Pack GitHub release artifact
+        shell: bash
+        working-directory: tmlus-core
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/tmlus-release"
+          npm pack --pack-destination "$RUNNER_TEMP/tmlus-release"
+
+      - name: Create GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$RUNNER_TEMP"/tmlus-release/*.tgz --clobber
+          else
+            gh release create "$tag" "$RUNNER_TEMP"/tmlus-release/*.tgz --title "$tag" --generate-notes --verify-tag
+          fi

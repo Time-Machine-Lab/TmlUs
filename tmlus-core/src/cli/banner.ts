@@ -201,7 +201,7 @@ export function selectBannerMode(context: BannerEnvironment): BannerMode {
   if (
     hasArg(context.args, '--no-banner', '--quiet')
     || isTruthyEnv(context.env.TMLUS_NO_BANNER)
-    || hasArg(context.args, '--version', '-v')
+    || hasArg(context.args, 'version')
   ) {
     return 'suppressed';
   }

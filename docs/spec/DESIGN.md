@@ -30,7 +30,7 @@ TmlUs 可以有短暂的启动动效，让工具更有记忆点，但动效必�
 
 - 启动动效默认控制在 1 秒以内。
 - `--no-banner`、`--quiet`、`TMLUS_NO_BANNER=1` 必须关闭装饰性输出。
-- `--version`、CI、非 TTY 输出必须保持干净。
+- `version`、CI、非 TTY 输出必须保持干净。
 
 ### 2.3 终端原生，不依赖图片
 
@@ -283,7 +283,7 @@ tmlus > 正在召唤 TML AI 开发工作台...█
 | TTY + 无色 | monochrome |
 | CI | suppressed |
 | stdout 非 TTY | suppressed |
-| `--version` | suppressed |
+| `version` | suppressed |
 | `--quiet` / `--no-banner` / `TMLUS_NO_BANNER=1` | suppressed |
 
 ## 8. 适用场景
@@ -313,7 +313,7 @@ tmlus > 正在召唤 TML AI 开发工作台...█
 
 ### 8.3 禁止使用装饰样式
 
-- `--version`
+- `version`
 - JSON / machine-readable 输出
 - CI logs
 - 重定向或管道输出

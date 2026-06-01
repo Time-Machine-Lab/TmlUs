@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import type { EnvironmentDefinition, WorkModeDefinition, WorkModeId, WorkModeInitializationResult } from '../core/types.js';
+import { renderWorkModeCommandStart, renderWorkModeInitializationStart } from '../ui/output.js';
 
 const execFileAsync = promisify(execFile);
 const OPENSPEC_COMMAND = process.platform === 'win32' ? 'openspec.cmd' : 'openspec';
@@ -47,7 +48,7 @@ function openspecToolTargets(environments: EnvironmentDefinition[] = []): string
 export async function initializeWorkMode(
   projectRoot: string,
   mode: WorkModeDefinition,
-  options: { environments?: EnvironmentDefinition[] } = {}
+  options: { environments?: EnvironmentDefinition[]; quiet?: boolean } = {}
 ): Promise<WorkModeInitializationResult> {
   if (mode.id === 'skip') {
     return {
@@ -58,6 +59,7 @@ export async function initializeWorkMode(
   }
 
   const tools = openspecToolTargets(options.environments);
+  renderWorkModeInitializationStart(mode.name, tools, { quiet: options.quiet });
   const openspecDirectory = path.join(projectRoot, 'openspec');
   if (existsSync(openspecDirectory) && tools === 'none') {
     return {
@@ -68,6 +70,7 @@ export async function initializeWorkMode(
   }
 
   try {
+    renderWorkModeCommandStart(`openspec init "${projectRoot}" --tools ${tools}`, { quiet: options.quiet });
     await execFileAsync(OPENSPEC_COMMAND, ['init', projectRoot, '--tools', tools], {
       cwd: projectRoot,
       shell: process.platform === 'win32',

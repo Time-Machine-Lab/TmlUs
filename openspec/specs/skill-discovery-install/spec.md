@@ -12,24 +12,24 @@ Each Skill entry MUST include Skill ID, display name, source, category, function
 
 #### Scenario: Skill list comes from catalog
 
-- **WHEN** the user runs `tmlus --skills`
+- **WHEN** the user runs `tmlus skills`
 - **THEN** TmlUs displays skills from the maintained Skill catalog
 
 #### Scenario: New Skill can be added through catalog
 
 - **WHEN** a developer adds a new Skill entry to the catalog
-- **THEN** the Skill can appear in `tmlus --skills` without changing selection or install flow logic
+- **THEN** the Skill can appear in `tmlus skills` without changing selection or install flow logic
 
 ### Requirement: Interactive Skill listing and selection
 
-TmlUs SHALL support interactive Skill discovery through `tmlus --skills`.
+TmlUs SHALL support interactive Skill discovery through `tmlus skills`.
 
 The command MUST present skills in a selectable list with Skill name, source, category, and functional description. The list MUST support pagination and multi-select.
 
 #### Scenario: User browses paged Skill list
 
 - **WHEN** the maintained Skill catalog has more items than one page
-- **THEN** `tmlus --skills` allows the user to navigate pages
+- **THEN** `tmlus skills` allows the user to navigate pages
 
 #### Scenario: User selects multiple skills
 
@@ -59,18 +59,18 @@ The target IDE selection MUST prioritize already existing AI IDE environments, M
 
 ### Requirement: Direct Skill install arguments
 
-TmlUs SHALL support direct Skill installation arguments through `tmlus --skills`.
+TmlUs SHALL support direct Skill installation arguments through `tmlus skills`.
 
 When Skill IDs are provided, TmlUs MUST skip Skill selection. When target IDE names are provided, TmlUs MUST skip target IDE selection. If no target IDE is provided, TmlUs MUST default to all existing supported AI IDE environments.
 
 #### Scenario: Direct Skill install to specified IDE
 
-- **WHEN** the user runs `tmlus --skills tml-docs-spec-generate --ide codex`
+- **WHEN** the user runs `tmlus skills tml-docs-spec-generate --ide codex`
 - **THEN** TmlUs installs the `tml-docs-spec-generate` Skill into the Codex environment without Skill or IDE selection prompts
 
 #### Scenario: Direct Skill install to existing IDEs
 
-- **WHEN** the user runs `tmlus --skills tml-docs-spec-generate` without an IDE target
+- **WHEN** the user runs `tmlus skills tml-docs-spec-generate` without an IDE target
 - **THEN** TmlUs installs the Skill into all existing supported AI IDE environments
 
 ### Requirement: Skill download and progress
@@ -118,7 +118,7 @@ The output MUST be readable without color, MUST avoid decorative animation in CI
 
 #### Scenario: Quiet mode suppresses decoration
 
-- **WHEN** the user runs `tmlus --skills` with `--quiet` or `--no-banner`
+- **WHEN** the user runs `tmlus skills` with `--quiet` or `--no-banner`
 - **THEN** decorative output is suppressed while essential results remain available
 
 ### Requirement: Search and recommendation deferred
@@ -129,5 +129,5 @@ The Skill flow MUST be limited to maintained catalog display, selection, and ins
 
 #### Scenario: Search is not exposed
 
-- **WHEN** the user runs `tmlus --skills`
+- **WHEN** the user runs `tmlus skills`
 - **THEN** the command does not expose search, online search, or recommendation behavior

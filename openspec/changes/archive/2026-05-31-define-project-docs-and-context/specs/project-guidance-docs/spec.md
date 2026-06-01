@@ -40,7 +40,7 @@ The development guidelines MUST NOT include database governance, business API co
 
 The development guidelines SHALL require all CLI output design and implementation to follow `docs/spec/DESIGN.md`.
 
-The guidelines MUST preserve these CLI behavior constraints: decorative output is disabled for `--version`, JSON or machine-readable output, CI logs, non-TTY output, and explicit quiet/no-banner modes; important information MUST remain understandable without color; startup animation MUST be short and non-blocking.
+The guidelines MUST preserve these CLI behavior constraints: decorative output is disabled for `version`, JSON or machine-readable output, CI logs, non-TTY output, and explicit quiet/no-banner modes; important information MUST remain understandable without color; startup animation MUST be short and non-blocking.
 
 #### Scenario: CLI output rules reference DESIGN.md
 

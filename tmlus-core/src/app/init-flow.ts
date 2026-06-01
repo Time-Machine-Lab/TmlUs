@@ -213,7 +213,7 @@ export async function runInitFlow(options: InitFlowOptions): Promise<InitFlowRes
       steps.push({
         step: 'skills',
         status: 'failed',
-        message: 'No existing supported AI IDE environments found. Run `tmlus --ide <ide>` first or pass `--ide <ide>`.'
+        message: 'No existing supported AI IDE environments found. Run `tmlus ide <ide>` first or pass `--ide <ide>`.'
       });
       return { projectRoot, steps, failed: true };
     }
@@ -262,7 +262,10 @@ export async function runInitFlow(options: InitFlowOptions): Promise<InitFlowRes
         : (options.explicitIdeNames?.length
           ? (await resolveSkillTargets(projectRoot, [], options.explicitIdeNames)).environments
           : []);
-    const result = await initializeWorkMode(projectRoot, selected.mode, { environments: workModeTargets });
+    const result = await initializeWorkMode(projectRoot, selected.mode, {
+      environments: workModeTargets,
+      quiet: options.quiet
+    });
     steps.push({
       step: 'work-mode',
       status: result.status === 'failed' ? 'failed' : result.status === 'skipped' ? 'skipped' : 'completed',

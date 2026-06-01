@@ -1,6 +1,6 @@
 ## Context
 
-The current CLI already has focused building blocks for AI IDE environment initialization (`tmlus --ide`) and Skill installation (`tmlus --skills`). Those commands are useful as standalone operations, but the project-start path still requires users to run several commands in the correct order and repeat choices such as target AI IDE environments.
+The current CLI already has focused building blocks for AI IDE environment initialization (`tmlus ide`) and Skill installation (`tmlus skills`). Those commands are useful as standalone operations, but the project-start path still requires users to run several commands in the correct order and repeat choices such as target AI IDE environments.
 
 The architecture guidance defines `init` as an application use case, with the CLI shell collecting input and the app layer orchestrating resource, environment, tool, workspace, and UI modules. This change keeps that boundary: `tmlus init` becomes a workflow coordinator, while reusable steps such as TML Docs structure initialization and work-mode initialization are also exposed as standalone commands.
 
@@ -32,13 +32,13 @@ banner -> workdir -> ide -> tml-spec -> skills -> work-mode
 
 The app layer will decide which steps execute based on parsed CLI options. `--from <step>` resolves to an index in that ordered list, skips earlier steps, and continues through every later step.
 
-Alternative considered: hard-code one long interactive function in `cli/index.ts`. This would be faster to write, but it would repeat the current coupling in `--skills` and make later step removal or reordering expensive.
+Alternative considered: hard-code one long interactive function in `cli/index.ts`. This would be faster to write, but it would repeat the current coupling in `skills` and make later step removal or reordering expensive.
 
 ### Decision 2: Keep standalone commands for reusable steps
 
-TML Docs structure initialization will be exposed as `tmlus --tml-spec`. Work-mode initialization will be exposed as `tmlus --work-mode`. `tmlus init` calls the same app-level functions rather than shelling out to its own CLI commands.
+TML Docs structure initialization will be exposed as `tmlus tml-spec`. Work-mode initialization will be exposed as `tmlus work-mode`. `tmlus init` calls the same app-level functions rather than shelling out to its own CLI commands.
 
-Alternative considered: have `init` execute subprocesses such as `tmlus --tml-spec`. That preserves command reuse at the process level, but it makes shared state, selected project root, selected IDE targets, quiet/no-banner behavior, and error handling harder to control.
+Alternative considered: have `init` execute subprocesses such as `tmlus tml-spec`. That preserves command reuse at the process level, but it makes shared state, selected project root, selected IDE targets, quiet/no-banner behavior, and error handling harder to control.
 
 ### Decision 3: Carry selected AI IDE environments forward to Skill installation
 
@@ -51,11 +51,11 @@ skill-creator
 tml-docs-spec-generate
 ```
 
-Alternative considered: call the existing `--skills` flow as-is. That would duplicate the IDE target prompt and violate the expected init experience.
+Alternative considered: call the existing `skills` flow as-is. That would duplicate the IDE target prompt and violate the expected init experience.
 
 ### Decision 4: Treat TML Docs as a workspace structure use case
 
-`tmlus --tml-spec` creates or repairs this project-root-relative structure:
+`tmlus tml-spec` creates or repairs this project-root-relative structure:
 
 ```text
 docs/
@@ -72,7 +72,7 @@ Alternative considered: make this part of a future recipe engine only. The folde
 
 ### Decision 5: Scope work-mode initialization to the selected project
 
-`tmlus --work-mode openspec` initializes OpenSpec only inside the selected project root. It must not perform global installation or modify user-level settings. If OpenSpec CLI is unavailable or project initialization fails, the command reports the issue with a next-step suggestion.
+`tmlus work-mode openspec` initializes OpenSpec only inside the selected project root. It must not perform global installation or modify user-level settings. If OpenSpec CLI is unavailable or project initialization fails, the command reports the issue with a next-step suggestion.
 
 Alternative considered: globally install OpenSpec when missing. That is more magical but changes the user's machine outside the project root and exceeds the confirmed scope.
 

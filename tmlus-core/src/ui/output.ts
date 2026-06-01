@@ -6,9 +6,13 @@ import type {
   SkillDefinition,
   SkillInstallResult,
   TmlDocsStructureResult,
+  ToolDefinition,
+  ToolInstallProgressEvent,
+  ToolInstallResult,
   WorkModeInitializationResult
 } from '../core/types.js';
 import { SKILL_CATALOG } from '../catalog/skills.js';
+import { TOOL_CATALOG } from '../catalog/tools.js';
 
 export interface OutputOptions {
   quiet?: boolean;
@@ -133,6 +137,85 @@ export function renderSkillNameList(title: string, skills: SkillDefinition[], op
   }
 }
 
+function toolRecommendationLabel(tool: ToolDefinition): string {
+  return '★'.repeat(tool.recommendation);
+}
+
+export function renderToolCatalogPage(page = 1, pageSize = 8): void {
+  const totalPages = Math.max(1, Math.ceil(TOOL_CATALOG.length / pageSize));
+  const safePage = Math.min(Math.max(page, 1), totalPages);
+  const start = (safePage - 1) * pageSize;
+  const tools = TOOL_CATALOG.slice(start, start + pageSize);
+
+  printSection(`Tool list ${safePage}/${totalPages}`);
+  console.log(`${paint('|', color.violet)}  ${paint(`${pad('Name', 18)} ${pad('Recommend', 10)} Purpose`, color.mint)}`);
+  console.log(`${paint('|', color.violet)}  ${paint(`${'-'.repeat(18)} ${'-'.repeat(10)} ${'-'.repeat(58)}`, color.gray)}`);
+
+  for (const tool of tools) {
+    console.log(`${paint('|', color.violet)}  ${paint('*', color.aqua)} ${pad(tool.name, 16)} ${pad(toolRecommendationLabel(tool), 10)} ${tool.purpose}`);
+    console.log(`${paint('|', color.violet)}    ID: ${tool.id}`);
+  }
+}
+
+export function renderToolInstallSummary(result: ToolInstallResult, options: OutputOptions = {}): void {
+  printSection('Tool install result', options);
+
+  for (const action of result.actions) {
+    const icon = action.status === 'failed'
+      ? paint('x', color.pink, options)
+      : action.status === 'skipped'
+        ? paint('-', color.gold, options)
+        : paint('ok', color.pink, options);
+    const target = action.target ? `  ${action.target}` : '';
+    printInfo(`${paint('|', color.violet, options)}  ${icon} [${action.status}] ${action.label}${target}  ${action.message}`, options);
+  }
+}
+
+export function renderToolInstallProgress(event: ToolInstallProgressEvent, options: OutputOptions = {}): void {
+  if (options.quiet) {
+    return;
+  }
+
+  if (event.type === 'plan') {
+    printSection(event.title, options);
+    for (const line of event.lines) {
+      printInfo(`${paint('|', color.violet, options)}  ${line}`, options);
+    }
+    return;
+  }
+
+  if (event.type === 'step-start') {
+    printInfo(`\n${paint('|', color.violet, options)}  [${event.step}/${event.total}] ${event.title}`, options);
+    if (event.detail) {
+      printInfo(`${paint('|', color.violet, options)}      ${event.detail}`, options);
+    }
+    return;
+  }
+
+  if (event.type === 'step-result') {
+    const action = event.action;
+    const icon = action.status === 'failed'
+      ? paint('x', color.pink, options)
+      : action.status === 'skipped'
+        ? paint('-', color.gold, options)
+        : paint('ok', color.pink, options);
+    const target = action.target ? `  ${action.target}` : '';
+    printInfo(`${paint('|', color.violet, options)}      ${icon} [${action.status}] ${action.label}${target}  ${action.message}`, options);
+    return;
+  }
+
+  printInfo(`\n${paint('|', color.violet, options)}  ${event.message}`, options);
+}
+
+export function renderToolSelectionHint(tools: ToolDefinition[]): void {
+  if (tools.length === 0) {
+    return;
+  }
+
+  console.log(`\n${paint('*', color.aqua)} ${paint('Direct', color.pink)}`);
+  console.log(`${paint('|', color.violet)}  tmlus tools ${tools[0]?.id ?? '<tool-id>'}`);
+}
+
 export function renderSkillInstallSummary(results: SkillInstallResult[], options: OutputOptions = {}): void {
   printSection('Skill 安装结果', options);
 
@@ -151,6 +234,14 @@ export function renderSkillInstallSummary(results: SkillInstallResult[], options
         : '';
     printInfo(`${paint('│', color.violet, options)}  ${icon} ${target}${location}${suffix}`, options);
   }
+}
+
+export function renderSkillInstallStart(skillCount: number, environmentCount: number, options: OutputOptions = {}): void {
+  printInfo(`Installing ${skillCount} skill(s) to ${environmentCount} AI IDE environment(s)...`, options);
+}
+
+export function renderSkillInstallBatchStart(batchNumber: number, totalBatches: number, labels: string[], options: OutputOptions = {}): void {
+  printInfo(`Starting skill install batch ${batchNumber}/${totalBatches}: ${labels.join(', ')}`, options);
 }
 
 export function renderSkillDownloadProgress(done: number, total: number, label: string, options: OutputOptions = {}): void {
@@ -179,6 +270,14 @@ export function renderWorkModeInitializationSummary(result: WorkModeInitializati
   printInfo(`  [${result.status}] ${result.mode.name}  ${result.message}`, options);
 }
 
+export function renderWorkModeInitializationStart(modeName: string, targetTools: string, options: OutputOptions = {}): void {
+  printInfo(`Initializing work mode ${modeName} with tools: ${targetTools}...`, options);
+}
+
+export function renderWorkModeCommandStart(command: string, options: OutputOptions = {}): void {
+  printInfo(`Running ${command}`, options);
+}
+
 export function renderInitStepSummary(
   results: Array<{ step: string; status: 'completed' | 'skipped' | 'failed'; message: string }>,
   options: OutputOptions = {}
@@ -196,6 +295,6 @@ export function renderSkillSelectionHint(skills: SkillDefinition[]): void {
   }
 
   console.log(`\n${paint('◆', color.aqua)} ${paint('Direct', color.pink)}`);
-  console.log(`${paint('│', color.violet)}  tmlus --skills ${skills[0]?.id ?? '<skill-id>'}`);
-  console.log(`${paint('│', color.violet)}  tmlus --skills <skill-id> --ide codex`);
+  console.log(`${paint('│', color.violet)}  tmlus skills ${skills[0]?.id ?? '<skill-id>'}`);
+  console.log(`${paint('│', color.violet)}  tmlus skills <skill-id> --ide codex`);
 }

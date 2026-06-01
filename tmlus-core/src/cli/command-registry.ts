@@ -2,7 +2,7 @@ import type { CommandMetadata, Language } from '../core/types.js';
 
 export const COMMAND_REGISTRY: CommandMetadata[] = [
   {
-    flag: 'init',
+    command: 'init',
     valueHint: '[--from step]',
     name: {
       zh: 'Project initialization',
@@ -21,8 +21,7 @@ export const COMMAND_REGISTRY: CommandMetadata[] = [
     ]
   },
   {
-    flag: '--help',
-    aliases: ['-h'],
+    command: 'help',
     name: {
       zh: '帮助',
       en: 'Help'
@@ -31,11 +30,10 @@ export const COMMAND_REGISTRY: CommandMetadata[] = [
       zh: '查看当前所有命令功能，支持中文和英文说明。',
       en: 'Show all available commands with Chinese and English descriptions.'
     },
-    examples: ['tmlus --help', 'tmlus --help --lang en']
+    examples: ['tmlus help', 'tmlus help --lang en']
   },
   {
-    flag: '--version',
-    aliases: ['-v'],
+    command: 'version',
     name: {
       zh: '版本',
       en: 'Version'
@@ -44,34 +42,10 @@ export const COMMAND_REGISTRY: CommandMetadata[] = [
       zh: '输出当前 tmlus 版本，保持干净无装饰。',
       en: 'Print the current tmlus version without decoration.'
     },
-    examples: ['tmlus --version']
+    examples: ['tmlus version']
   },
   {
-    flag: '--no-banner',
-    name: {
-      zh: '关闭启动视觉',
-      en: 'Disable banner'
-    },
-    description: {
-      zh: '关闭启动卡片和装饰性输出。',
-      en: 'Disable startup card and decorative output.'
-    },
-    examples: ['tmlus --no-banner --help']
-  },
-  {
-    flag: '--quiet',
-    name: {
-      zh: '安静模式',
-      en: 'Quiet mode'
-    },
-    description: {
-      zh: '只输出必要结果，适合脚本和自动化场景。',
-      en: 'Only print essential results for scripts and automation.'
-    },
-    examples: ['tmlus --quiet --ide codex']
-  },
-  {
-    flag: '--ide',
+    command: 'ide',
     valueHint: '[ideNames]',
     name: {
       zh: 'AI IDE 环境初始化',
@@ -81,7 +55,7 @@ export const COMMAND_REGISTRY: CommandMetadata[] = [
       zh: '检测并初始化 Codex、Claude Code、Cursor、Trae、CodeBuddy 等 AI IDE 必要目录。',
       en: 'Detect and initialize required folders for Codex, Claude Code, Cursor, Trae, CodeBuddy, and other AI IDE environments.'
     },
-    examples: ['tmlus --ide', 'tmlus --ide codex', 'tmlus --ide codex,claude'],
+    examples: ['tmlus ide', 'tmlus ide codex', 'tmlus ide codex,claude'],
     parameterNotes: [
       {
         zh: '可直接输入 AI IDE 名称或别名，跳过选择。',
@@ -90,7 +64,7 @@ export const COMMAND_REGISTRY: CommandMetadata[] = [
     ]
   },
   {
-    flag: '--skills',
+    command: 'skills',
     valueHint: '[skillIds]',
     name: {
       zh: 'AI Skill 发现与安装',
@@ -101,15 +75,15 @@ export const COMMAND_REGISTRY: CommandMetadata[] = [
       en: 'List maintained TmlUs skills and install them to one or more AI IDE environments.'
     },
     examples: [
-      'tmlus --skills',
-      'tmlus --skills tml-docs-spec-generate',
-      'tmlus --skills tml-docs-spec-generate --ide codex',
-      'tmlus --skills search'
+      'tmlus skills',
+      'tmlus skills tml-docs-spec-generate',
+      'tmlus skills tml-docs-spec-generate --ide codex',
+      'tmlus skills search'
     ],
     parameterNotes: [
       {
-        zh: '可通过列表底部 Search 或 `tmlus --skills search` 进入远程 Skill 搜索，目前支持 TML Team 来源。',
-        en: 'Use the Search row or `tmlus --skills search` to discover remote skills. TML Team is supported for now.'
+        zh: '可通过列表底部 Search 或 `tmlus skills search` 进入远程 Skill 搜索，目前支持 TML Team 来源。',
+        en: 'Use the Search row or `tmlus skills search` to discover remote skills. TML Team is supported for now.'
       },
       {
         zh: '不指定 IDE 时，默认安装到当前项目所有已存在的受支持 AI IDE 环境。',
@@ -118,7 +92,30 @@ export const COMMAND_REGISTRY: CommandMetadata[] = [
     ]
   },
   {
-    flag: '--tml-spec',
+    command: 'tools',
+    valueHint: '[toolIds]',
+    name: {
+      zh: 'External Tool discovery and installation',
+      en: 'External Tool discovery and installation'
+    },
+    description: {
+      zh: 'List maintained external tools and install or adapt one tool for the current project and AI IDE environment.',
+      en: 'List maintained external tools and install or adapt one tool for the current project and AI IDE environment.'
+    },
+    examples: [
+      'tmlus tools',
+      'tmlus tools codegraph',
+      'tmlus tools codegraph --ide codex'
+    ],
+    parameterNotes: [
+      {
+        zh: 'Pass a Tool ID such as codegraph to skip selection and start that Tool flow directly.',
+        en: 'Pass a Tool ID such as codegraph to skip selection and start that Tool flow directly.'
+      }
+    ]
+  },
+  {
+    command: 'tml-spec',
     name: {
       zh: 'TML Docs structure initialization',
       en: 'TML Docs structure initialization'
@@ -127,10 +124,10 @@ export const COMMAND_REGISTRY: CommandMetadata[] = [
       zh: 'Create or repair docs, docs/design, docs/api, docs/sql, docs/preview, and docs/spec with .gitkeep files.',
       en: 'Create or repair docs, docs/design, docs/api, docs/sql, docs/preview, and docs/spec with .gitkeep files.'
     },
-    examples: ['tmlus --tml-spec', 'tmlus --tml-spec --quiet']
+    examples: ['tmlus tml-spec', 'tmlus tml-spec --quiet']
   },
   {
-    flag: '--work-mode',
+    command: 'work-mode',
     valueHint: '[openspec|skip]',
     name: {
       zh: 'Project work mode initialization',
@@ -140,13 +137,59 @@ export const COMMAND_REGISTRY: CommandMetadata[] = [
       zh: 'Initialize project work mode. Supported modes are openspec and skip.',
       en: 'Initialize project work mode. Supported modes are openspec and skip.'
     },
-    examples: ['tmlus --work-mode', 'tmlus --work-mode openspec --ide codex,claude'],
+    examples: ['tmlus work-mode', 'tmlus work-mode openspec --ide codex,claude'],
     parameterNotes: [
       {
         zh: 'openspec initializes OpenSpec only in the current project; skip performs no work-mode initialization.',
         en: 'openspec initializes OpenSpec only in the current project; skip performs no work-mode initialization.'
       }
     ]
+  }
+];
+
+const GLOBAL_OPTIONS: Array<{
+  option: string;
+  valueHint?: string;
+  name: { zh: string; en: string };
+  description: { zh: string; en: string };
+  examples: string[];
+}> = [
+  {
+    option: '--no-banner',
+    name: {
+      zh: '关闭启动视觉',
+      en: 'Disable banner'
+    },
+    description: {
+      zh: '关闭启动卡片和装饰性输出。',
+      en: 'Disable startup card and decorative output.'
+    },
+    examples: ['tmlus help --no-banner']
+  },
+  {
+    option: '--quiet',
+    name: {
+      zh: '安静模式',
+      en: 'Quiet mode'
+    },
+    description: {
+      zh: '只输出必要结果，适合脚本和自动化场景。',
+      en: 'Only print essential results for scripts and automation.'
+    },
+    examples: ['tmlus ide codex --quiet']
+  },
+  {
+    option: '--lang',
+    valueHint: '<zh|en>',
+    name: {
+      zh: '帮助语言',
+      en: 'Help language'
+    },
+    description: {
+      zh: '切换帮助输出语言。',
+      en: 'Switch help output language.'
+    },
+    examples: ['tmlus help --lang en']
   }
 ];
 
@@ -157,6 +200,7 @@ function text(value: { zh: string; en: string }, language: Language): string {
 export function renderHelp(language: Language): string {
   const usage = language === 'zh' ? '用法' : 'Usage';
   const commands = language === 'zh' ? '命令' : 'Commands';
+  const options = language === 'zh' ? '选项' : 'Options';
   const examples = language === 'zh' ? '示例' : 'Examples';
 
   const lines = [
@@ -171,7 +215,7 @@ export function renderHelp(language: Language): string {
   for (const command of COMMAND_REGISTRY) {
     const aliases = command.aliases?.length ? ` (${command.aliases.join(', ')})` : '';
     const valueHint = command.valueHint ? ` ${command.valueHint}` : '';
-    lines.push(`  ${command.flag}${valueHint}${aliases}`);
+    lines.push(`  ${command.command}${valueHint}${aliases}`);
     lines.push(`    ${text(command.name, language)} - ${text(command.description, language)}`);
     if (command.parameterNotes?.length) {
       for (const note of command.parameterNotes) {
@@ -180,11 +224,21 @@ export function renderHelp(language: Language): string {
     }
   }
 
+  lines.push('', `${options}:`);
+  for (const option of GLOBAL_OPTIONS) {
+    const valueHint = option.valueHint ? ` ${option.valueHint}` : '';
+    lines.push(`  ${option.option}${valueHint}`);
+    lines.push(`    ${text(option.name, language)} - ${text(option.description, language)}`);
+  }
+
   lines.push('', `${examples}:`);
   for (const command of COMMAND_REGISTRY) {
     for (const example of command.examples.slice(0, 2)) {
       lines.push(`  ${example}`);
     }
+  }
+  for (const option of GLOBAL_OPTIONS) {
+    lines.push(`  ${option.examples[0]}`);
   }
 
   return lines.join('\n');

@@ -6,6 +6,14 @@ import { getAllEnvironmentStatuses, initializeEnvironments, resolveEnvironmentNa
 import { initializeTmlDocsStructure, tmlDocsStructureHasFailure } from '../app/tml-docs.js';
 import { initializeWorkMode, resolveWorkMode, unknownWorkModeMessage, WORK_MODES } from '../app/work-mode.js';
 import {
+  defaultTools,
+  defaultToolTargets,
+  installTool,
+  resolveToolIds,
+  toolInstallHasFailure,
+  unknownToolMessage
+} from '../app/tool-install.js';
+import {
   defaultSkillTargets,
   defaultSkills,
   installSkills,
@@ -32,6 +40,10 @@ import {
   renderSkillNameList,
   renderSkillSelectionHint,
   renderTmlDocsStructureSummary,
+  renderToolCatalogPage,
+  renderToolInstallProgress,
+  renderToolInstallSummary,
+  renderToolSelectionHint,
   renderWorkModeInitializationSummary
 } from '../ui/output.js';
 import {
@@ -41,6 +53,8 @@ import {
   selectSearchSourceIds,
   selectSkillIds,
   selectSkillTargetEnvironmentIds,
+  selectToolId,
+  selectToolTargetEnvironmentIds,
   selectWorkModeId
 } from '../ui/selection.js';
 
@@ -51,9 +65,45 @@ const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as { versi
 const args = process.argv.slice(2);
 const projectRoot = process.cwd();
 const quiet = isQuiet(args);
+const COMMAND_NAMES = new Set(['help', 'version', 'init', 'ide', 'tml-spec', 'work-mode', 'tools', 'skills']);
+const GLOBAL_OPTIONS = new Set(['--quiet', '--no-banner']);
+const GLOBAL_OPTIONS_WITH_VALUE = new Set(['--lang', '--language']);
 
-function hasArg(...names: string[]): boolean {
-  return args.some((arg) => names.includes(arg));
+interface CommandResolution {
+  command?: string;
+  index?: number;
+  error?: string;
+}
+
+const commandResolution = resolveCommand();
+
+function resolveCommand(): CommandResolution {
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+
+    if (GLOBAL_OPTIONS.has(arg)) {
+      continue;
+    }
+
+    if (GLOBAL_OPTIONS_WITH_VALUE.has(arg)) {
+      index += 1;
+      continue;
+    }
+
+    if (COMMAND_NAMES.has(arg)) {
+      return { command: arg, index };
+    }
+
+    if (arg.startsWith('-')) {
+      return {
+        error: 'Command names now use subcommands without leading dashes. Run `tmlus help` to see supported commands.'
+      };
+    }
+
+    return { error: `Unknown command: ${arg}` };
+  }
+
+  return {};
 }
 
 function valueAfter(name: string): string | undefined {
@@ -72,14 +122,13 @@ function splitValues(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
-function positionalValuesAfter(flag: string): string[] {
-  const index = args.indexOf(flag);
-  if (index < 0) {
+function positionalValuesForCommand(command: string): string[] {
+  if (commandResolution.command !== command || commandResolution.index === undefined) {
     return [];
   }
 
   const values: string[] = [];
-  for (const arg of args.slice(index + 1)) {
+  for (const arg of args.slice(commandResolution.index + 1)) {
     if (arg.startsWith('--')) {
       break;
     }
@@ -100,7 +149,7 @@ async function runHelp(): Promise<void> {
 }
 
 async function runIde(): Promise<void> {
-  let requestedNames = positionalValuesAfter('--ide');
+  let requestedNames = positionalValuesForCommand('ide');
   if (!requestedNames.length) {
     const selected = await selectEnvironmentIds(await getAllEnvironmentStatuses(projectRoot));
     if (selected === SELECTION_CANCELLED) {
@@ -137,7 +186,7 @@ async function runTmlSpec(): Promise<void> {
 }
 
 async function runWorkMode(): Promise<void> {
-  let requestedModes = positionalValuesAfter('--work-mode');
+  let requestedModes = positionalValuesForCommand('work-mode');
   if (!requestedModes.length && process.stdout.isTTY && process.stdin.isTTY) {
     const selected = await selectWorkModeId(WORK_MODES);
     if (selected === SELECTION_CANCELLED) {
@@ -165,7 +214,10 @@ async function runWorkMode(): Promise<void> {
     return;
   }
 
-  const result = await initializeWorkMode(projectRoot, mode, { environments: targetResolution.environments });
+  const result = await initializeWorkMode(projectRoot, mode, {
+    environments: targetResolution.environments,
+    quiet
+  });
   renderWorkModeInitializationSummary(result, { quiet });
 
   if (result.status === 'failed') {
@@ -174,7 +226,7 @@ async function runWorkMode(): Promise<void> {
 }
 
 async function runSkills(): Promise<void> {
-  let skillIds = positionalValuesAfter('--skills');
+  let skillIds = positionalValuesForCommand('skills');
   const explicitIdeNames = splitValues(valueAfter('--ide'));
   const explicitSearchSourceNames = splitValues(valueAfter('--search'));
   let activeSkillPool = defaultSkills();
@@ -300,7 +352,7 @@ async function runSkills(): Promise<void> {
   }
 
   if (!targetResolution.environments.length) {
-    console.error('No existing supported AI IDE environments found. Run `tmlus --ide <ide>` first or pass `--ide <ide>`.');
+    console.error('No existing supported AI IDE environments found. Run `tmlus ide <ide>` first or pass `--ide <ide>`.');
     process.exitCode = 1;
     return;
   }
@@ -313,14 +365,88 @@ async function runSkills(): Promise<void> {
   }
 }
 
+async function runTools(): Promise<void> {
+  let toolIds = positionalValuesForCommand('tools');
+  const explicitIdeNames = splitValues(valueAfter('--ide'));
+
+  if (!toolIds.length) {
+    const selected = await selectToolId(defaultTools());
+    if (selected === SELECTION_CANCELLED) {
+      return;
+    }
+
+    if (selected === undefined) {
+      renderToolCatalogPage();
+      renderToolSelectionHint(defaultTools());
+      return;
+    }
+
+    toolIds = selected;
+    if (!toolIds.length) {
+      printInfo('No tool selected.', { quiet });
+      return;
+    }
+  }
+
+  const resolvedTools = resolveToolIds(toolIds.slice(0, 1));
+  if (resolvedTools.unknown.length) {
+    console.error(unknownToolMessage(resolvedTools.unknown));
+    process.exitCode = 1;
+    return;
+  }
+
+  const targetResolution = explicitIdeNames.length
+    ? resolveEnvironmentNames(explicitIdeNames)
+    : { environments: [], unknown: [] };
+
+  if (targetResolution.unknown.length) {
+    console.error(unknownIdeMessage(targetResolution.unknown));
+    process.exitCode = 1;
+    return;
+  }
+
+  let targetEnvironments = targetResolution.environments;
+  if (!explicitIdeNames.length && process.stdout.isTTY && process.stdin.isTTY) {
+    const selected = await selectToolTargetEnvironmentIds(await getAllEnvironmentStatuses(projectRoot));
+    if (selected === SELECTION_CANCELLED) {
+      return;
+    }
+
+    const selectedNames = selected ?? [];
+    const selectedResolution = selectedNames.length
+      ? resolveEnvironmentNames(selectedNames)
+      : { environments: [], unknown: [] };
+    if (selectedResolution.unknown.length) {
+      console.error(unknownIdeMessage(selectedResolution.unknown));
+      process.exitCode = 1;
+      return;
+    }
+
+    targetEnvironments = selectedResolution.environments;
+  } else if (!explicitIdeNames.length) {
+    targetEnvironments = await defaultToolTargets(projectRoot);
+  }
+
+  const result = await installTool(projectRoot, resolvedTools.tools[0], targetEnvironments, {
+    onProgress: (event) => renderToolInstallProgress(event, { quiet })
+  });
+  if (quiet) {
+    renderToolInstallSummary(result, { quiet });
+  }
+
+  if (toolInstallHasFailure(result)) {
+    process.exitCode = 1;
+  }
+}
+
 async function runInit(): Promise<void> {
   await renderStartupBanner({ args });
   const result = await runInitFlow({
     args,
     defaultProjectRoot: projectRoot,
     quiet,
-    explicitIdeNames: positionalValuesAfter('--ide'),
-    explicitWorkModeName: positionalValuesAfter('--work-mode')[0]
+    explicitIdeNames: splitValues(valueAfter('--ide')),
+    explicitWorkModeName: splitValues(valueAfter('--work-mode'))[0]
   });
   renderInitStepSummary(result.steps, { quiet });
 
@@ -330,38 +456,49 @@ async function runInit(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  if (hasArg('--version', '-v')) {
+  if (commandResolution.error) {
+    console.error(commandResolution.error);
+    process.exitCode = 1;
+    return;
+  }
+
+  if (commandResolution.command === 'version') {
     printVersion();
     return;
   }
 
-  if (hasArg('--help', '-h')) {
+  if (commandResolution.command === 'help') {
     await renderStartupBanner({ args });
     await runHelp();
     return;
   }
 
-  if (args[0] === 'init') {
+  if (commandResolution.command === 'init') {
     await runInit();
     return;
   }
 
-  if (hasArg('--tml-spec')) {
+  if (commandResolution.command === 'tml-spec') {
     await runTmlSpec();
     return;
   }
 
-  if (hasArg('--work-mode')) {
+  if (commandResolution.command === 'work-mode') {
     await runWorkMode();
     return;
   }
 
-  if (hasArg('--skills')) {
+  if (commandResolution.command === 'tools') {
+    await runTools();
+    return;
+  }
+
+  if (commandResolution.command === 'skills') {
     await runSkills();
     return;
   }
 
-  if (hasArg('--ide')) {
+  if (commandResolution.command === 'ide') {
     await runIde();
     return;
   }

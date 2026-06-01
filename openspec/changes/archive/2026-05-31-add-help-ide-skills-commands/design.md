@@ -13,9 +13,9 @@ The relevant project constraints are:
 
 **Goals:**
 
-- Replace static help text with a command metadata registry rendered by `tmlus --help`.
-- Add `tmlus --ide` to detect supported AI IDE environments and initialize only necessary folder structures.
-- Add `tmlus --skills` to list maintained skills, allow selection, and install selected skills into selected or existing AI IDE environments.
+- Replace static help text with a command metadata registry rendered by `tmlus help`.
+- Add `tmlus ide` to detect supported AI IDE environments and initialize only necessary folder structures.
+- Add `tmlus skills` to list maintained skills, allow selection, and install selected skills into selected or existing AI IDE environments.
 - Keep IDE and Skill definitions catalog-driven so new commands, IDEs, and skills can be added without changing core help or installer logic.
 - Provide progress and list UI that respects `docs/spec/DESIGN.md`.
 
@@ -30,17 +30,17 @@ The relevant project constraints are:
 
 ### Decision: Use a command metadata registry for help
 
-Introduce a registry structure that stores each command's flags, aliases, Chinese/English name, description, examples, parameter notes, and handler metadata. `tmlus --help` renders from the registry instead of hardcoded help lines.
+Introduce a registry structure that stores each command's name, aliases, Chinese/English name, description, examples, parameter notes, and handler metadata. `tmlus help` renders from the registry instead of hardcoded help lines.
 
 This makes help dynamic: adding a new command requires registering metadata and handler wiring, not editing help rendering code.
 
 Alternative considered: keep static help text. Rejected because it would drift as commands grow.
 
-### Decision: Keep `--ide` and `--skills` as top-level compatibility flags
+### Decision: Keep `ide` and `skills` as top-level commands
 
-The requested user-facing commands are `tmlus --ide` and `tmlus --skills`. The command registry should support these flags directly. Internally, handlers may map to use cases such as `runIdeInit()` and `runSkillInstall()`.
+The requested user-facing commands are `tmlus ide` and `tmlus skills`. The command registry should support these subcommands directly. Internally, handlers may map to use cases such as `runIdeInit()` and `runSkillInstall()`.
 
-Future subcommand aliases such as `tmlus ide` or `tmlus skills` can be added later, but the initial change must satisfy the requested command bodies.
+Future aliases can be added later, but the initial change must satisfy the requested command bodies.
 
 ### Decision: Model AI IDE environments as catalog entries plus adapters
 
@@ -67,7 +67,7 @@ Gemini and OpenCode may remain listed only if their required folder targets are 
 
 ### Decision: Detect IDE status before rendering choices
 
-`tmlus --ide` and `tmlus --skills` target selection should scan the project root before rendering choices. The UI should mark each environment as:
+`tmlus ide` and `tmlus skills` target selection should scan the project root before rendering choices. The UI should mark each environment as:
 
 - not initialized
 - existing complete
@@ -113,7 +113,7 @@ Environment initialization and Skill installation must create directories and fi
   → Mitigation: Use one registry as the source for both help rendering and dispatch wiring.
 
 - [Risk] Interactive UI breaks CI or scripted usage.
-  → Mitigation: Support direct parameters for `--ide` and `--skills`; suppress decorative UI in CI/non-TTY/quiet modes according to `docs/spec/DESIGN.md`.
+  → Mitigation: Support direct parameters for `ide` and `skills`; suppress decorative UI in CI/non-TTY/quiet modes according to `docs/spec/DESIGN.md`.
 
 - [Risk] Network downloads fail midway.
   → Mitigation: Report per-skill/per-environment success and failure; keep completed installs; do not claim total success unless all selected installs succeed.
@@ -121,7 +121,7 @@ Environment initialization and Skill installation must create directories and fi
 ## Migration Plan
 
 1. Introduce core types for commands, IDE environments, skills, write plans, and install results.
-2. Add a command registry and render `tmlus --help` from registry metadata.
+2. Add a command registry and render `tmlus help` from registry metadata.
 3. Add AI IDE environment catalog and detection/initialization use case.
 4. Add Skill catalog, paged listing, multi-select flow, target IDE selection, bounded concurrent download, and install summary.
 5. Route all new writes through workspace helper functions.
@@ -129,5 +129,5 @@ Environment initialization and Skill installation must create directories and fi
 
 ## Open Questions
 
-- Should Gemini and OpenCode be included in the first `--ide` list only after their project-local resource folder conventions are confirmed?
-- Should `tmlus --skills` default to all existing AI IDE directories when no IDE is passed even in non-interactive mode, or should it require explicit confirmation when multiple targets exist?
+- Should Gemini and OpenCode be included in the first `ide` list only after their project-local resource folder conventions are confirmed?
+- Should `tmlus skills` default to all existing AI IDE directories when no IDE is passed even in non-interactive mode, or should it require explicit confirmation when multiple targets exist?

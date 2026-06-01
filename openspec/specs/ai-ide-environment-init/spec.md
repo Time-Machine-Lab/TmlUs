@@ -12,13 +12,13 @@ Each environment entry MUST include a stable ID, display name, aliases, project 
 
 #### Scenario: Supported IDEs are catalog-driven
 
-- **WHEN** the `tmlus --ide` command needs to render choices
+- **WHEN** the `tmlus ide` command needs to render choices
 - **THEN** it reads supported AI IDE environments from the environment catalog
 
 #### Scenario: New IDE can be added through catalog
 
 - **WHEN** a developer adds a new environment entry with required metadata
-- **THEN** the `tmlus --ide` selection list can include it without rewriting the initialization flow
+- **THEN** the `tmlus ide` selection list can include it without rewriting the initialization flow
 
 ### Requirement: AI IDE detection
 
@@ -29,44 +29,44 @@ The detection MUST distinguish between missing environments, existing complete e
 #### Scenario: Existing IDE is marked
 
 - **WHEN** the current project contains a supported AI IDE marker directory
-- **THEN** `tmlus --ide` marks that environment as already existing in the selection list
+- **THEN** `tmlus ide` marks that environment as already existing in the selection list
 
 #### Scenario: Incomplete IDE is marked
 
 - **WHEN** the current project contains an AI IDE marker directory but lacks required subdirectories
-- **THEN** `tmlus --ide` marks that environment as incomplete and offers initialization of missing required directories
+- **THEN** `tmlus ide` marks that environment as incomplete and offers initialization of missing required directories
 
 ### Requirement: Interactive IDE initialization
 
-TmlUs SHALL support interactive AI IDE environment initialization through `tmlus --ide`.
+TmlUs SHALL support interactive AI IDE environment initialization through `tmlus ide`.
 
 The command MUST show a selection list of supported AI IDE environments, including status markers for existing or incomplete environments, and MUST create only the required directories for selected environments.
 
 #### Scenario: User initializes IDE interactively
 
-- **WHEN** the user runs `tmlus --ide` and selects one or more AI IDE environments
+- **WHEN** the user runs `tmlus ide` and selects one or more AI IDE environments
 - **THEN** TmlUs creates missing required directories for the selected environments
 - **AND** it reports created, existing, skipped, or failed items
 
 #### Scenario: Initialization is idempotent
 
-- **WHEN** the user runs `tmlus --ide` for an environment whose required directories already exist
+- **WHEN** the user runs `tmlus ide` for an environment whose required directories already exist
 - **THEN** TmlUs does not duplicate files or directories and reports that the environment is already initialized
 
 ### Requirement: Direct IDE initialization arguments
 
-TmlUs SHALL support direct IDE-name arguments for `tmlus --ide`.
+TmlUs SHALL support direct IDE-name arguments for `tmlus ide`.
 
 When one or more IDE names or aliases are provided, the command MUST skip the selection prompt and initialize the requested environments directly.
 
 #### Scenario: Direct single IDE initialization
 
-- **WHEN** the user runs `tmlus --ide codex`
+- **WHEN** the user runs `tmlus ide codex`
 - **THEN** TmlUs initializes the Codex environment without prompting for IDE selection
 
 #### Scenario: Unknown IDE argument
 
-- **WHEN** the user runs `tmlus --ide unknown-ide`
+- **WHEN** the user runs `tmlus ide unknown-ide`
 - **THEN** TmlUs reports the unknown IDE name and lists supported IDs or aliases
 
 ### Requirement: Minimal required IDE folder structures
@@ -101,10 +101,10 @@ The command MUST use readable list/status output, MUST not rely only on color fo
 
 #### Scenario: IDE list status is text-readable
 
-- **WHEN** `tmlus --ide` renders the IDE selection list
+- **WHEN** `tmlus ide` renders the IDE selection list
 - **THEN** each environment status is understandable from text even without color
 
 #### Scenario: CI output is clean
 
-- **WHEN** `tmlus --ide` runs in CI or non-TTY output
+- **WHEN** `tmlus ide` runs in CI or non-TTY output
 - **THEN** decorative banners or animations are suppressed

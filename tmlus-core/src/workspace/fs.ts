@@ -1,4 +1,4 @@
-import { access, cp, mkdir, stat, writeFile } from 'node:fs/promises';
+import { access, cp, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { DirectoryEnsureResult, FileEnsureResult } from '../core/types.js';
 
@@ -87,4 +87,44 @@ export async function copyDirectory(sourcePath: string, projectRoot: string, rel
     force: true,
     recursive: true
   });
+}
+
+export async function ensureGitignoreEntry(projectRoot: string, entry: string): Promise<FileEnsureResult> {
+  const relativePath = '.gitignore';
+  const targetPath = resolveProjectPath(projectRoot, relativePath);
+  const normalizedEntry = entry.trim();
+
+  try {
+    let content = '';
+    if (await pathExists(targetPath)) {
+      const targetStatus = await stat(targetPath);
+      if (!targetStatus.isFile()) {
+        return {
+          path: relativePath,
+          status: 'failed',
+          error: 'Path exists but is not a file.'
+        };
+      }
+
+      content = await readFile(targetPath, 'utf8');
+      const lines = content.split(/\r?\n/).map((line) => line.trim());
+      if (lines.includes(normalizedEntry)) {
+        return { path: relativePath, status: 'existing' };
+      }
+    }
+
+    const prefix = content.length && !content.endsWith('\n') ? '\n' : '';
+    const nextContent = `${content}${prefix}${normalizedEntry}\n`;
+    await writeFile(targetPath, nextContent, 'utf8');
+    return {
+      path: relativePath,
+      status: content.length ? 'created' : 'created'
+    };
+  } catch (error) {
+    return {
+      path: relativePath,
+      status: 'failed',
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
 }

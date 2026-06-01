@@ -6,7 +6,7 @@ export interface LocalizedText {
 }
 
 export interface CommandMetadata {
-  flag: string;
+  command: string;
   aliases?: string[];
   valueHint?: string;
   name: LocalizedText;
@@ -60,6 +60,70 @@ export interface SkillDefinition {
   installer?: SkillInstallerDefinition;
   targets: SkillInstallTarget[];
 }
+
+export type ToolRecommendation = 1 | 2 | 3 | 4 | 5;
+
+export type ToolInstallStrategy = 'external-cli';
+
+export interface ToolInstallerDefinition {
+  strategy: ToolInstallStrategy;
+  command: string;
+  packageName?: string;
+}
+
+export interface ToolDefinition {
+  id: string;
+  aliases?: string[];
+  name: string;
+  purpose: string;
+  recommendation: ToolRecommendation;
+  installer: ToolInstallerDefinition;
+  adapter: string;
+  supportedEnvironmentIds: string[];
+  projectArtifacts: string[];
+}
+
+export type ToolInstallActionStatus =
+  | 'installed'
+  | 'existing'
+  | 'initialized'
+  | 'configured'
+  | 'skipped'
+  | 'failed';
+
+export interface ToolInstallActionResult {
+  label: string;
+  status: ToolInstallActionStatus;
+  message: string;
+  target?: string;
+}
+
+export interface ToolInstallResult {
+  tool: ToolDefinition;
+  actions: ToolInstallActionResult[];
+}
+
+export type ToolInstallProgressEvent =
+  | {
+    type: 'plan';
+    title: string;
+    lines: string[];
+  }
+  | {
+    type: 'step-start';
+    step: number;
+    total: number;
+    title: string;
+    detail?: string;
+  }
+  | {
+    type: 'step-result';
+    action: ToolInstallActionResult;
+  }
+  | {
+    type: 'note';
+    message: string;
+  };
 
 export interface DirectoryEnsureResult {
   path: string;

@@ -19,7 +19,7 @@ The implementation should translate that HTML concept into a real terminal exper
 - Do not build a web UI or reuse the HTML preview at runtime.
 - Do not require images, browser rendering, or external services.
 - Do not block command execution on banner animation.
-- Do not show the banner for `--version` or machine-readable/quiet output.
+- Do not show the banner for `version` or machine-readable/quiet output.
 - Do not introduce business commands beyond the banner integration.
 
 ## Decisions
@@ -98,13 +98,13 @@ Alternatives considered:
 ## Migration Plan
 
 1. Add the terminal-native banner module and integrate it into the default interactive startup path.
-2. Keep `--version` plain and stable.
+2. Keep `version` plain and stable.
 3. Ensure help output remains readable after the banner and can run without the banner when disabled.
 4. Add tests or scripted checks for animated, static, no-banner, CI, and narrow-terminal decisions.
 5. Roll back by removing the banner call from the CLI entry point while leaving command behavior unchanged.
 
 ## Open Questions
 
-- Should the default `tmlus --help` show the banner, or should the banner show only for bare `tmlus` and future interactive commands?
+- Should the default `tmlus help` show the banner, or should the banner show only for bare `tmlus` and future interactive commands?
 - Should the first implementation depend on a small ANSI library, or should it use local ANSI helpers to avoid adding dependencies?
 - What exact terminal width should trigger the compact fallback: 80 columns, 90 columns, or a measured width based on the final art?

@@ -1,6 +1,6 @@
 import * as readline from 'node:readline';
 import { stdin, stdout } from 'node:process';
-import type { EnvironmentStatus, SkillDefinition, WorkModeDefinition } from '../core/types.js';
+import type { EnvironmentStatus, SkillDefinition, ToolDefinition, WorkModeDefinition } from '../core/types.js';
 import { canPrompt } from './prompt.js';
 
 interface SelectItem {
@@ -243,6 +243,22 @@ function skillToTableItem(skill: SkillDefinition): SelectTableItem {
       skill.description
     ],
     detail: skill.description
+  };
+}
+
+function recommendationLabel(value: ToolDefinition['recommendation']): string {
+  return '★'.repeat(value);
+}
+
+function toolToTableItem(tool: ToolDefinition): SelectTableItem {
+  return {
+    id: tool.id,
+    cells: [
+      tool.name,
+      tool.purpose,
+      recommendationLabel(tool.recommendation)
+    ],
+    detail: `${tool.purpose} ID: ${tool.id}`
   };
 }
 
@@ -594,6 +610,98 @@ async function singleSelect(options: MultiSelectOptions): Promise<SelectionResul
   });
 }
 
+async function singleSelectTable(options: MultiSelectTableOptions): Promise<SelectionResult> {
+  if (!canPrompt()) {
+    return undefined;
+  }
+
+  if (!options.items.length) {
+    return [];
+  }
+
+  const pageSize = options.pageSize ?? 10;
+  const selectedIds = new Set<string>();
+  let cursor = 0;
+  let renderedLines = 0;
+  let rawModeWasEnabled = false;
+
+  readline.emitKeypressEvents(stdin);
+  stdin.resume();
+
+  if (stdin.isTTY) {
+    rawModeWasEnabled = stdin.isRaw ?? false;
+    stdin.setRawMode(true);
+  }
+
+  stdout.write('\u001B[?25l');
+
+  return new Promise((resolve: (value: SelectionResult) => void) => {
+    const cleanup = (): void => {
+      stdin.off('keypress', onKeypress);
+      if (stdin.isTTY) {
+        stdin.setRawMode(rawModeWasEnabled);
+      }
+      stdin.pause();
+      stdout.write('\u001B[?25h');
+    };
+
+    const finish = (value: SelectionResult): void => {
+      cleanup();
+      resolve(value);
+    };
+
+    const render = (): void => {
+      renderedLines = writeFrame(
+        renderTableSelectorFrame(
+          { title: options.title, columns: options.columns, items: options.items, pageSize },
+          selectedIds,
+          cursor
+        ),
+        renderedLines
+      );
+    };
+
+    const onKeypress = (_value: string, key: readline.Key): void => {
+      if (key.ctrl && key.name === 'c') {
+        finish(SELECTION_CANCELLED);
+        return;
+      }
+
+      switch (key.name) {
+        case 'up':
+          cursor = clamp(cursor - 1, 0, options.items.length - 1);
+          break;
+        case 'down':
+          cursor = clamp(cursor + 1, 0, options.items.length - 1);
+          break;
+        case 'pageup':
+        case 'left':
+          cursor = clamp(cursor - pageSize, 0, options.items.length - 1);
+          break;
+        case 'pagedown':
+        case 'right':
+          cursor = clamp(cursor + pageSize, 0, options.items.length - 1);
+          break;
+        case 'space':
+        case 'return':
+          finish([options.items[cursor].id]);
+          return;
+        case 'escape':
+        case 'q':
+          finish(SELECTION_CANCELLED);
+          return;
+        default:
+          break;
+      }
+
+      render();
+    };
+
+    stdin.on('keypress', onKeypress);
+    render();
+  });
+}
+
 async function multiSelectTable(options: MultiSelectTableOptions): Promise<SelectionResult> {
   if (!canPrompt()) {
     return undefined;
@@ -807,6 +915,19 @@ export async function selectRemoteSkillIds(skills: SkillDefinition[], pageSize =
   });
 }
 
+export async function selectToolId(tools: ToolDefinition[], pageSize = 12): Promise<SelectionResult> {
+  return singleSelectTable({
+    title: 'Tools',
+    columns: [
+      { title: 'Name', width: 18 },
+      { title: 'Purpose', width: 58 },
+      { title: 'Recommend', width: 10 }
+    ],
+    items: tools.map(toolToTableItem),
+    pageSize
+  });
+}
+
 export async function selectSkillTargetEnvironmentIds(statuses: EnvironmentStatus[]): Promise<SelectionResult> {
   const sorted = [...statuses].sort((left, right) => environmentStatusRank(left) - environmentStatusRank(right));
   const existingIds = sorted
@@ -817,6 +938,23 @@ export async function selectSkillTargetEnvironmentIds(statuses: EnvironmentStatu
     title: 'Install To',
     items: sorted.map(environmentToItem),
     initialSelectedIds: [],
+    emptyConfirmIds: existingIds
+  });
+}
+
+export async function selectToolTargetEnvironmentIds(statuses: EnvironmentStatus[]): Promise<SelectionResult> {
+  const supportedIds = new Set(['codex', 'claude', 'cursor']);
+  const sorted = [...statuses]
+    .filter((status) => supportedIds.has(status.environment.id))
+    .sort((left, right) => environmentStatusRank(left) - environmentStatusRank(right));
+  const existingIds = sorted
+    .filter((status) => status.kind !== 'missing')
+    .map((status) => status.environment.id);
+
+  return multiSelect({
+    title: 'CodeGraph MCP',
+    items: sorted.map(environmentToItem),
+    initialSelectedIds: existingIds,
     emptyConfirmIds: existingIds
   });
 }

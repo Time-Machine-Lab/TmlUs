@@ -5,7 +5,7 @@ import { findSkillById, SKILL_CATALOG, supportedSkillIds } from '../catalog/skil
 import type { EnvironmentDefinition, SkillDefinition, SkillInstallResult } from '../core/types.js';
 import { initializeEnvironments, selectDefaultIdeTargets } from './ide-init.js';
 import { copyDirectory, ensureDirectory, pathExists, resolveProjectPath } from '../workspace/fs.js';
-import { renderSkillDownloadProgress } from '../ui/output.js';
+import { renderSkillDownloadProgress, renderSkillInstallBatchStart, renderSkillInstallStart } from '../ui/output.js';
 import { downloadGitHubPaths, downloadGitHubSkillBundle, downloadGitHubSource } from '../adapters/tools/github-skill-source.js';
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
@@ -189,9 +189,17 @@ export async function installSkills(
   const results: SkillInstallResult[] = [];
   let completed = 0;
   const concurrency = 3;
+  const totalBatches = Math.max(1, Math.ceil(jobs.length / concurrency));
+  renderSkillInstallStart(skills.length, environments.length, options);
 
   for (let index = 0; index < jobs.length; index += concurrency) {
     const batch = jobs.slice(index, index + concurrency);
+    renderSkillInstallBatchStart(
+      Math.floor(index / concurrency) + 1,
+      totalBatches,
+      batch.map((job) => `${job.skill.id} -> ${job.environment.displayName}`),
+      options
+    );
     const batchResults = await Promise.all(batch.map(async (job) => {
       const result = await installSkillToEnvironment(projectRoot, job.skill, job.environment);
       completed += 1;

@@ -6,6 +6,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { selectionRenderTestApi } from '../dist/ui/selection.js';
 import { SKILL_CATALOG, findSkillById } from '../dist/catalog/skills.js';
+import { findToolById } from '../dist/catalog/tools.js';
 
 const execFileAsync = promisify(execFile);
 const repoRoot = path.resolve('..');
@@ -66,10 +67,10 @@ const gitignore = readFileSync(path.join(repoRoot, '.gitignore'), 'utf8');
 assert.match(gitignore, /(^|\n)tmlus-test\/(\n|$)/);
 
 const longInteractiveLines = selectionRenderTestApi.normalizeFrameLines([
-  '◆ Skills',
-  '│  Name                     Category   Source                               Description',
-  '▌  ◇ TML Docs Spec Generate TML规范      github:Time-Machine-Lab/TML-Skills/skills/tml-docs-spec-generate 基于 TML-Docs-Spec 模板生成项目概念、架构设计、开发规范等标准化文档。',
-  '│    github:Time-Machine-Lab/TML-Skills/skills/tml-docs-spec-generate'
+  '* Skills',
+  '| Name                     Category   Source                               Description',
+  '> * TML Docs Spec Generate TML spec     github:Time-Machine-Lab/TML-Skills/skills/tml-docs-spec-generate Generate project concept, architecture, and development guideline docs from templates.',
+  '|   github:Time-Machine-Lab/TML-Skills/skills/tml-docs-spec-generate'
 ], 60);
 assert.equal(longInteractiveLines.every((line) => selectionRenderTestApi.visibleWidth(line) <= 60), true);
 
@@ -84,19 +85,35 @@ await execFileAsync('powershell', [
 assert.equal(existsSync(testRoot), true);
 await assertSandboxWritable();
 
-const help = await run(['--help']);
-assert.match(help.stdout, /--ide/);
-assert.match(help.stdout, /--skills/);
+const help = await run(['help']);
+assert.match(help.stdout, /ide/);
+assert.match(help.stdout, /skills/);
+assert.match(help.stdout, /tools/);
+for (const oldCommand of ['help', 'skills', 'tools']) {
+  assert.doesNotMatch(help.stdout, new RegExp(['tmlus', `--${oldCommand}`].join(' ')));
+}
 assert.doesNotMatch(help.stdout, /\u001B\[/);
 
-const english = await run(['--help', '--lang', 'en']);
+const english = await run(['help', '--lang', 'en']);
 assert.match(english.stdout, /AI Skill discovery and installation/);
 
-const version = await run(['--version']);
+for (const oldCommand of ['help', 'skills', 'tools', 'ide', 'version', 'tml-spec', 'work-mode']) {
+  let failed = false;
+  try {
+    await run([`--${oldCommand}`]);
+  } catch (error) {
+    failed = true;
+    assert.match(error.stderr, /Command names now use subcommands without leading dashes/);
+    assert.match(error.stderr, /tmlus help/);
+  }
+  assert.equal(failed, true);
+}
+
+const version = await run(['version']);
 assert.match(version.stdout.trim(), /^\d+\.\d+\.\d+/);
 assert.doesNotMatch(version.stdout, /TML AI DEV ATELIER/);
 
-const emptyIde = await run(['--ide']);
+const emptyIde = await run(['ide']);
 assert.equal(emptyIde.stdout.trim(), '');
 assert.equal(existsSync(path.join(testRoot, '.codex')), false);
 assert.equal(existsSync(path.join(testRoot, '.claude')), false);
@@ -104,36 +121,36 @@ assert.equal(existsSync(path.join(testRoot, '.cursor')), false);
 assert.equal(existsSync(path.join(testRoot, '.trae')), false);
 assert.equal(existsSync(path.join(testRoot, '.codebuddy')), false);
 
-const codex = await run(['--ide', 'codex']);
+const codex = await run(['ide', 'codex']);
 assert.match(codex.stdout, /\[created\] \.codex\/skills/);
 assert.equal(existsSync(path.join(testRoot, '.codex', 'skills')), true);
 assert.equal(existsSync(path.join(testRoot, '.codex', 'prompts')), true);
 assert.equal(existsSync(path.join(testRoot, '.codex', 'commands')), false);
 
-const codexAgain = await run(['--ide', 'codex']);
+const codexAgain = await run(['ide', 'codex']);
 assert.match(codexAgain.stdout, /\[existing\] \.codex\/skills/);
 
-const cursor = await run(['--ide', 'cursor']);
+const cursor = await run(['ide', 'cursor']);
 assert.equal(existsSync(path.join(testRoot, '.cursor', 'rules')), true);
 assert.equal(existsSync(path.join(testRoot, '.cursor', 'commands')), true);
-assert.equal(existsSync(path.join(testRoot, '.cursor', 'skills')), false);
+assert.equal(existsSync(path.join(testRoot, '.cursor', 'skills')), true);
 
-const skillList = await run(['--skills']);
+const skillList = await run(['skills']);
 assert.match(skillList.stdout, /Skill Creator/);
 assert.match(skillList.stdout, /GSAP Skills/);
 assert.match(skillList.stdout, /Html Anything/);
 assert.match(skillList.stdout, /DB Skills/);
 assert.doesNotMatch(skillList.stdout, /Source/);
-assert.doesNotMatch(skillList.stdout, /来源:/);
-assert.match(skillList.stdout, /分类:/);
-assert.match(skillList.stdout, /功能:/);
+assert.match(skillList.stdout, /ID: skill-creator/);
+assert.match(skillList.stdout, /ID: tml-docs-spec-generate/);
+assert.match(skillList.stdout, /tmlus skills <skill-id> --ide codex/);
 
-const unsupported = await run(['--skills', 'tml-docs-spec-generate', '--ide', 'cursor']);
-assert.match(unsupported.stdout, /◇ tml-docs-spec-generate -> Cursor  跳过/);
-assert.doesNotMatch(unsupported.stdout, /does not support/);
+const cursorSkill = await run(['skills', 'tml-docs-spec-generate', '--ide', 'cursor']);
+assert.match(cursorSkill.stdout, /tml-docs-spec-generate -> Cursor/);
+assert.match(cursorSkill.stdout, /\.cursor\/skills\/tml-docs-spec-generate/);
 
-const quiet = await run(['--skills', 'tml-docs-spec-generate', '--ide', 'cursor', '--quiet']);
-assert.doesNotMatch(quiet.stdout, /✦/);
+const quiet = await run(['skills', 'tml-docs-spec-generate', '--ide', 'cursor', '--quiet']);
+assert.doesNotMatch(quiet.stdout, /TML AI DEV ATELIER/);
 assert.doesNotMatch(quiet.stdout, /\u001B\[/);
 
 assert.equal(SKILL_CATALOG.every((skill) => !skill.source.startsWith('local:')), true);
@@ -141,15 +158,17 @@ assert.equal(findSkillById('html-anythins').id, 'html-anything');
 assert.equal(findSkillById('gsap').installer.strategy, 'github-skill-bundle');
 assert.equal(findSkillById('frontend-slides').installer.strategy, 'github-root-skill');
 assert.equal(findSkillById('dbskill').installer.strategy, 'github-skill-bundle');
+assert.equal(findToolById('codegraph').adapter, 'codegraph');
+assert.equal(findToolById('cg').id, 'codegraph');
 
-const noColorHelp = await run(['--help'], testRoot, { NO_COLOR: '1' });
+const noColorHelp = await run(['help'], testRoot, { NO_COLOR: '1' });
 assert.doesNotMatch(noColorHelp.stdout, /\u001B\[/);
 
-const unknownIde = await runExpectFail(['--ide', 'not-real']);
+const unknownIde = await runExpectFail(['ide', 'not-real']);
 assert.match(unknownIde.stderr, /Unknown AI IDE/);
 assert.match(unknownIde.stderr, /Supported IDEs/);
 
-const unknownSkill = await runExpectFail(['--skills', 'not-real', '--ide', 'codex']);
+const unknownSkill = await runExpectFail(['skills', 'not-real', '--ide', 'codex']);
 assert.match(unknownSkill.stderr, /Unknown Skill/);
 assert.match(unknownSkill.stderr, /Supported Skills/);
 

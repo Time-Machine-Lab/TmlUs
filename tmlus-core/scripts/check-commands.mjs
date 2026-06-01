@@ -20,32 +20,49 @@ async function run(args, cwd = process.cwd()) {
   });
 }
 
-const help = await run(['--help']);
+const help = await run(['help']);
 assert.match(help.stdout, /init/);
-assert.match(help.stdout, /--ide/);
-assert.match(help.stdout, /--skills/);
-assert.match(help.stdout, /--tml-spec/);
-assert.match(help.stdout, /--work-mode/);
+assert.match(help.stdout, /ide/);
+assert.match(help.stdout, /skills/);
+assert.match(help.stdout, /tools/);
+assert.match(help.stdout, /tml-spec/);
+assert.match(help.stdout, /work-mode/);
 assert.match(help.stdout, /Project initialization/);
+for (const oldCommand of ['help', 'skills', 'tools']) {
+  assert.doesNotMatch(help.stdout, new RegExp(['tmlus', `--${oldCommand}`].join(' ')));
+}
 
-const englishHelp = await run(['--help', '--lang', 'en']);
+for (const oldCommand of ['help', 'skills', 'tools', 'ide', 'version', 'tml-spec', 'work-mode']) {
+  let failed = false;
+  try {
+    await run([`--${oldCommand}`]);
+  } catch (error) {
+    failed = true;
+    assert.match(error.stderr, /Command names now use subcommands without leading dashes/);
+    assert.match(error.stderr, /tmlus help/);
+  }
+  assert.equal(failed, true);
+}
+
+const englishHelp = await run(['help', '--lang', 'en']);
 assert.match(englishHelp.stdout, /AI IDE environment initialization/);
+assert.match(englishHelp.stdout, /External Tool discovery and installation/);
 assert.match(englishHelp.stdout, /TML Docs structure initialization/);
 assert.match(englishHelp.stdout, /Project work mode initialization/);
 
 const workspace = await mkdtemp(path.join(tmpdir(), 'tmlus-check-'));
 try {
-  const ide = await run(['--ide', 'codex'], workspace);
+  const ide = await run(['ide', 'codex'], workspace);
   assert.match(ide.stdout, /\.codex\/skills/);
   assert.equal(existsSync(path.join(workspace, '.codex', 'skills')), true);
   assert.equal(existsSync(path.join(workspace, '.codex', 'prompts')), true);
 
-  const ideAgain = await run(['--ide', 'codex'], workspace);
+  const ideAgain = await run(['ide', 'codex'], workspace);
   assert.match(ideAgain.stdout, /\[existing\] \.codex\/skills/);
 
   const cursorWorkspace = await mkdtemp(path.join(tmpdir(), 'tmlus-cursor-'));
   try {
-    const cursorIde = await run(['--ide', 'cursor'], cursorWorkspace);
+    const cursorIde = await run(['ide', 'cursor'], cursorWorkspace);
     assert.match(cursorIde.stdout, /\.cursor\/skills/);
     assert.equal(existsSync(path.join(cursorWorkspace, '.cursor', 'rules')), true);
     assert.equal(existsSync(path.join(cursorWorkspace, '.cursor', 'commands')), true);
@@ -54,12 +71,12 @@ try {
     await rm(cursorWorkspace, { force: true, recursive: true });
   }
 
-  const skillList = await run(['--skills'], workspace);
+  const skillList = await run(['skills'], workspace);
   assert.match(skillList.stdout, /tml-docs-spec-generate/);
   assert.match(skillList.stdout, /Skill Creator/);
   assert.match(skillList.stdout, /DB Skills/);
 
-  const tmlSpec = await run(['--tml-spec'], workspace);
+  const tmlSpec = await run(['tml-spec'], workspace);
   assert.match(tmlSpec.stdout, /TML Docs structure result/);
   for (const directory of ['docs', 'design', 'api', 'sql', 'preview', 'spec']) {
     const target = directory === 'docs'
@@ -69,15 +86,17 @@ try {
     assert.equal(existsSync(path.join(target, '.gitkeep')), true);
   }
 
-  const tmlSpecAgain = await run(['--tml-spec'], workspace);
+  const tmlSpecAgain = await run(['tml-spec'], workspace);
   assert.match(tmlSpecAgain.stdout, /\[existing\] docs\/spec\/\.gitkeep/);
 
-  const workModeSkip = await run(['--work-mode', 'skip'], workspace);
+  const workModeSkip = await run(['work-mode', 'skip'], workspace);
   assert.match(workModeSkip.stdout, /\[skipped\] Skip/);
 
   const openspecWorkspace = await mkdtemp(path.join(tmpdir(), 'tmlus-openspec-'));
   try {
-    const workModeOpenSpec = await run(['--work-mode', 'openspec', '--ide', 'codex,claude'], openspecWorkspace);
+    const workModeOpenSpec = await run(['work-mode', 'openspec', '--ide', 'codex,claude'], openspecWorkspace);
+    assert.match(workModeOpenSpec.stdout, /Initializing work mode OpenSpec with tools: codex,claude/);
+    assert.match(workModeOpenSpec.stdout, /Running openspec init/);
     assert.match(workModeOpenSpec.stdout, /\[(initialized|existing)\] OpenSpec/);
     assert.match(workModeOpenSpec.stdout, /codex,claude/);
     assert.equal(existsSync(path.join(openspecWorkspace, 'openspec')), true);
@@ -89,7 +108,9 @@ try {
 
   const cursorSkillWorkspace = await mkdtemp(path.join(tmpdir(), 'tmlus-cursor-skill-'));
   try {
-    const cursorSkillTarget = await run(['--skills', 'tml-docs-spec-generate', '--ide', 'cursor'], cursorSkillWorkspace);
+      const cursorSkillTarget = await run(['skills', 'tml-docs-spec-generate', '--ide', 'cursor'], cursorSkillWorkspace);
+    assert.match(cursorSkillTarget.stdout, /Installing 1 skill\(s\) to 1 AI IDE environment\(s\)/);
+    assert.match(cursorSkillTarget.stdout, /Starting skill install batch 1\/1/);
     assert.match(cursorSkillTarget.stdout, /tml-docs-spec-generate -> Cursor/);
     assert.equal(existsSync(path.join(cursorSkillWorkspace, '.cursor', 'skills', 'tml-docs-spec-generate')), true);
   } finally {
@@ -114,7 +135,7 @@ try {
 
   let unknownWorkModeFailed = false;
   try {
-    await run(['--work-mode', 'unknown-mode'], workspace);
+    await run(['work-mode', 'unknown-mode'], workspace);
   } catch (error) {
     unknownWorkModeFailed = true;
     assert.match(error.stderr, /Unknown work mode/);
@@ -134,7 +155,7 @@ try {
 
   let unknownFailed = false;
   try {
-    await run(['--ide', 'not-real'], workspace);
+    await run(['ide', 'not-real'], workspace);
   } catch (error) {
     unknownFailed = true;
     assert.match(error.stderr, /Unknown AI IDE/);

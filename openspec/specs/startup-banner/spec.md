@@ -85,12 +85,12 @@ The system SHALL keep functional CLI output stable and readable regardless of ba
 
 #### Scenario: Version output remains plain
 
-- **WHEN** the user runs `tmlus --version`
+- **WHEN** the user runs `tmlus version`
 - **THEN** the system SHALL print only the version-oriented output without startup banner animation
 
 #### Scenario: Help output remains readable
 
-- **WHEN** the user runs `tmlus --help`
+- **WHEN** the user runs `tmlus help`
 - **THEN** the system SHALL print help content that remains readable whether the banner is enabled, static, or suppressed
 
 #### Scenario: Banner failure does not fail command

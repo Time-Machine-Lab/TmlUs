@@ -21,7 +21,7 @@ function mode(overrides = {}) {
 }
 
 assert.equal(mode(), 'animated');
-assert.equal(mode({ args: ['--version'] }), 'suppressed');
+assert.equal(mode({ args: ['version'] }), 'suppressed');
 assert.equal(mode({ args: ['--no-banner'] }), 'suppressed');
 assert.equal(mode({ args: ['--quiet'] }), 'suppressed');
 assert.equal(mode({ env: { TMLUS_NO_BANNER: '1' } }), 'suppressed');

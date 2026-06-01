@@ -16,6 +16,7 @@
     "check:banner": "npm run build && node scripts/check-banner.mjs",
     "check:commands": "npm run build && node scripts/check-commands.mjs",
     "check:guidelines": "npm run build && node scripts/check-dev-guidelines.mjs",
+    "check:tools": "npm run build && node scripts/check-tools.mjs",
     "start": "node ./bin/tmlus.js"
   },
   "keywords": [
