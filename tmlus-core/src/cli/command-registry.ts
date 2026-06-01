@@ -45,6 +45,24 @@ export const COMMAND_REGISTRY: CommandMetadata[] = [
     examples: ['tmlus version']
   },
   {
+    command: 'update',
+    name: {
+      zh: '更新',
+      en: 'Update'
+    },
+    description: {
+      zh: '检查当前 tmlus 版本，并在 npm 有新版本时更新全局安装。',
+      en: 'Check the current tmlus version and update the global npm installation when a newer release is available.'
+    },
+    examples: ['tmlus update', 'tmlus update --quiet'],
+    parameterNotes: [
+      {
+        zh: 'npx 调用会显示使用最新版本的指引，而不是声明已更新当前调用。',
+        en: 'npx invocations show guidance for using the latest release instead of claiming the active invocation was updated.'
+      }
+    ]
+  },
+  {
     command: 'ide',
     valueHint: '[ideNames]',
     name: {

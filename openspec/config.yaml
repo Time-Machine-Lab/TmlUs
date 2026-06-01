@@ -33,9 +33,11 @@ rules:
     - Specs that affect CLI output must include behavior compatible with docs/spec/DESIGN.md, including quiet/no-banner, CI, non-TTY, JSON, and no-color modes.
   tasks:
     - If tasks involve code implementation, include reading docs/spec/**/*.md as a prerequisite.
+    - If tasks add, remove, rename, or change a public CLI command, include updating docs/TmlUs命令Wiki.md and command-level documentation checks.
     - If tasks involve CLI output, include compliance with docs/spec/DESIGN.md.
     - If tasks involve file writes, include safe write behavior: conflict detection, force/dry-run expectations, and idempotency.
   apply:
     - Before writing code, read relevant docs/spec/**/*.md and follow the documented module boundaries.
+    - For public CLI command changes, update docs/TmlUs命令Wiki.md before marking implementation complete.
     - Before implementing CLI output, read docs/spec/DESIGN.md and preserve machine-readable, CI, non-TTY, quiet, and no-banner behavior.
     - All project file writes must go through the workspace/file-writing boundary defined by the development guidelines.

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { runInitFlow } from '../app/init-flow.js';
 import { getAllEnvironmentStatuses, initializeEnvironments, resolveEnvironmentNames, unknownIdeMessage } from '../app/ide-init.js';
 import { initializeTmlDocsStructure, tmlDocsStructureHasFailure } from '../app/tml-docs.js';
+import { runTmlusUpdate, tmlusUpdateHasFailure } from '../app/update-flow.js';
 import { initializeWorkMode, resolveWorkMode, unknownWorkModeMessage, WORK_MODES } from '../app/work-mode.js';
 import {
   defaultTools,
@@ -40,6 +41,7 @@ import {
   renderSkillNameList,
   renderSkillSelectionHint,
   renderTmlDocsStructureSummary,
+  renderTmlusUpdateSummary,
   renderToolCatalogPage,
   renderToolInstallProgress,
   renderToolInstallSummary,
@@ -60,12 +62,12 @@ import {
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const packageJsonPath = path.resolve(currentDir, '../../package.json');
-const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as { version: string };
+const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as { name: string; version: string };
 
 const args = process.argv.slice(2);
 const projectRoot = process.cwd();
 const quiet = isQuiet(args);
-const COMMAND_NAMES = new Set(['help', 'version', 'init', 'ide', 'tml-spec', 'work-mode', 'tools', 'skills']);
+const COMMAND_NAMES = new Set(['help', 'version', 'init', 'ide', 'tml-spec', 'work-mode', 'tools', 'skills', 'update']);
 const GLOBAL_OPTIONS = new Set(['--quiet', '--no-banner']);
 const GLOBAL_OPTIONS_WITH_VALUE = new Set(['--lang', '--language']);
 
@@ -439,6 +441,20 @@ async function runTools(): Promise<void> {
   }
 }
 
+async function runUpdate(): Promise<void> {
+  await renderStartupBanner({ args });
+  const result = await runTmlusUpdate({
+    currentVersion: packageJson.version,
+    packageName: packageJson.name,
+    env: process.env
+  });
+  renderTmlusUpdateSummary(result, { quiet });
+
+  if (tmlusUpdateHasFailure(result)) {
+    process.exitCode = 1;
+  }
+}
+
 async function runInit(): Promise<void> {
   await renderStartupBanner({ args });
   const result = await runInitFlow({
@@ -495,6 +511,11 @@ async function main(): Promise<void> {
 
   if (commandResolution.command === 'skills') {
     await runSkills();
+    return;
+  }
+
+  if (commandResolution.command === 'update') {
+    await runUpdate();
     return;
   }
 

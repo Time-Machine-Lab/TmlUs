@@ -6,6 +6,7 @@ import type {
   SkillDefinition,
   SkillInstallResult,
   TmlDocsStructureResult,
+  TmlusUpdateResult,
   ToolDefinition,
   ToolInstallProgressEvent,
   ToolInstallResult,
@@ -276,6 +277,41 @@ export function renderWorkModeInitializationStart(modeName: string, targetTools:
 
 export function renderWorkModeCommandStart(command: string, options: OutputOptions = {}): void {
   printInfo(`Running ${command}`, options);
+}
+
+export function renderTmlusUpdateSummary(result: TmlusUpdateResult, options: OutputOptions = {}): void {
+  if (options.quiet) {
+    const line = result.manualCommand
+      ? `${result.status}: ${result.message} Manual: ${result.manualCommand}`
+      : `${result.status}: ${result.message}`;
+    if (result.status === 'failed' || result.status === 'verification-failed') {
+      console.error(line);
+      return;
+    }
+
+    console.log(line);
+    return;
+  }
+
+  printSection('TmlUs update result', options);
+
+  const versionLine = result.latestVersion
+    ? `Current: ${result.currentVersion}  Latest: ${result.latestVersion}`
+    : `Current: ${result.currentVersion}`;
+  printInfo(`  ${versionLine}`, options);
+  printInfo(`  [${result.status}] ${result.message}`, options);
+
+  if (result.verifiedVersion) {
+    printInfo(`  Verified: ${result.verifiedVersion}`, options);
+  }
+
+  if (result.manualCommand) {
+    printInfo(`  Manual: ${result.manualCommand}`, options);
+  }
+
+  if (result.status === 'unsupported-invocation') {
+    printInfo('  For npx usage, run `npx @time-machine-lab/tmlus@latest <command>` to use the newest release directly.', options);
+  }
 }
 
 export function renderInitStepSummary(

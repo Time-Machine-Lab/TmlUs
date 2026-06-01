@@ -27,6 +27,7 @@ TmlUs 是 TML 团队的 AI 开发工作台。它把项目初始化、AI IDE 环�
 | `tmlus work-mode openspec` | 为当前项目初始化 OpenSpec 工作模式 | 需要用提案、规格和任务驱动开发 |
 | `tmlus help` | 查看所有命令说明和示例 | 忘记咒语时快速翻书 |
 | `tmlus version` | 输出当前 CLI 版本 | 检查本地安装版本 |
+| `tmlus update` | 检查 npm 最新版本并更新全局安装 | 保持本机 CLI 与公开版本同步 |
 
 ## 快速开始
 

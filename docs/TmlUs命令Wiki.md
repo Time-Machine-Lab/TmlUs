@@ -7,6 +7,7 @@
 | `tmlus init` | 引导完成项目目录、AI IDE、TML Docs、Skills 和工作模式初始化 | 新项目接入 TML AI 开发工作台 |
 | `tmlus help` | 输出当前注册命令、全局选项和示例 | 用户或 Agent 快速查询命令 |
 | `tmlus version` | 输出当前 CLI 版本，保持无装饰 | 脚本、发布和排查版本问题 |
+| `tmlus update` | 检查当前 CLI 版本，并在 npm 有新版本时更新全局安装 | 保持本机 `tmlus` 与公开 npm 版本同步 |
 | `tmlus ide` | 检测并初始化 AI IDE 目录 | 为 Codex、Claude Code、Cursor、Trae、CodeBuddy 准备项目环境 |
 | `tmlus skills` | 浏览、搜索并安装 TmlUs 维护的 AI Skills | 给当前项目安装团队认可的 Skill |
 | `tmlus tools` | 浏览并安装外部工具适配 | 安装 CodeGraph 等可供 Agent 使用的外部工具 |
@@ -91,7 +92,35 @@ tmlus version
 - 输出必须保持干净，不包含 banner、颜色、动画或额外说明。
 - 适合发布脚本、CI 和用户排查本地版本。
 
-### 3.4 `tmlus ide`
+### 3.4 `tmlus update`
+
+`tmlus update` 用于检查当前安装的 TmlUs CLI 是否落后于 npm 公开发布版本，并在检测到新版本时尝试更新全局 npm 安装。
+
+```bash
+tmlus update
+tmlus update --quiet
+```
+
+行为说明：
+
+- 命令会读取当前 CLI 包版本，并通过 npm 查询 `@time-machine-lab/tmlus` 的 latest 版本。
+- 当 latest 版本不高于当前版本时，命令报告 already-current，不会重复安装。
+- 当 latest 版本高于当前版本，且当前调用可通过 npm 全局安装更新时，命令执行 `npm install -g @time-machine-lab/tmlus@latest`。
+- 更新完成后会验证可见的 `tmlus version` 是否已经到达 latest 版本；如果验证失败，会提示重启终端或检查 npm global bin 是否在 `PATH` 中。
+- 当命令从 `npx` 或 npm lifecycle 等无法确认可原地更新的调用方式运行时，只提供使用 latest 的指引，不会声明当前调用已更新。
+- npm registry 查询失败、全局安装失败或验证失败时，命令会给出失败原因和可手动执行的恢复命令。
+- `--quiet` 只输出必要状态或错误信息，适合脚本和自动化场景。
+
+支持项：
+
+| 项目 | 说明 |
+|------|------|
+| npm 包名 | `@time-machine-lab/tmlus` |
+| 默认更新命令 | `npm install -g @time-machine-lab/tmlus@latest` |
+| npx 最新版调用 | `npx @time-machine-lab/tmlus@latest <command>` |
+| 失败退出码 | 查询、安装或验证失败时返回非零状态 |
+
+### 3.5 `tmlus ide`
 
 `tmlus ide` 用于检测并初始化 AI IDE 环境目录。
 
@@ -124,7 +153,7 @@ tmlus ide cursor --quiet
 - 未知 IDE 会返回错误，并提示支持的环境列表。
 - `Esc` 取消交互式选择时，命令直接停止，不继续写入。
 
-### 3.5 `tmlus skills`
+### 3.6 `tmlus skills`
 
 `tmlus skills` 用于发现、搜索并安装 TmlUs 维护的 AI Skills。
 
@@ -164,7 +193,7 @@ tmlus skills search --ide codex
 - 安装流程默认幂等。目标 Skill 已存在时跳过，不静默覆盖用户已有内容。
 - 远程搜索只负责发现远程 Skill，安装仍复用统一 Skill 安装流程。
 
-### 3.6 `tmlus tools`
+### 3.7 `tmlus tools`
 
 `tmlus tools` 用于发现并安装 TmlUs 维护的外部工具适配。
 
@@ -194,7 +223,7 @@ tmlus tools cg --ide codex,claude,cursor
 - 如果未传 `--ide`，交互式终端会提示选择目标环境；非交互场景会使用当前项目中已存在且受支持的环境。
 - 工具安装失败时会输出失败步骤和可手动执行的修复命令。
 
-### 3.7 `tmlus tml-spec`
+### 3.8 `tmlus tml-spec`
 
 `tmlus tml-spec` 用于创建或修复 TML Docs 目录结构。
 
@@ -220,7 +249,7 @@ tmlus tml-spec --quiet
 - 已存在目录和文件会被标记为 existing，不会重复写入。
 - 任何目录或文件创建失败都会让命令以失败状态结束。
 
-### 3.8 `tmlus work-mode`
+### 3.9 `tmlus work-mode`
 
 `tmlus work-mode` 用于初始化项目工作模式。
 

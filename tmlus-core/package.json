@@ -17,6 +17,7 @@
     "check:commands": "npm run build && node scripts/check-commands.mjs",
     "check:guidelines": "npm run build && node scripts/check-dev-guidelines.mjs",
     "check:tools": "npm run build && node scripts/check-tools.mjs",
+    "check:update": "npm run build && node scripts/check-update.mjs",
     "start": "node ./bin/tmlus.js"
   },
   "keywords": [

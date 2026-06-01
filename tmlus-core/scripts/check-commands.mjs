@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { COMMAND_REGISTRY } from '../dist/cli/command-registry.js';
 
 const execFileAsync = promisify(execFile);
 const cli = path.resolve('bin/tmlus.js');
+const commandWiki = readFileSync(path.resolve('..', 'docs', 'TmlUs命令Wiki.md'), 'utf8');
 
 async function run(args, cwd = process.cwd()) {
   return execFileAsync(process.execPath, [cli, ...args], {
@@ -25,14 +27,22 @@ assert.match(help.stdout, /init/);
 assert.match(help.stdout, /ide/);
 assert.match(help.stdout, /skills/);
 assert.match(help.stdout, /tools/);
+assert.match(help.stdout, /update/);
 assert.match(help.stdout, /tml-spec/);
 assert.match(help.stdout, /work-mode/);
 assert.match(help.stdout, /Project initialization/);
+
+for (const command of COMMAND_REGISTRY) {
+  const escapedCommand = command.command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  assert.match(commandWiki, new RegExp(`\\| \`tmlus ${escapedCommand}\` \\|`), `Command Wiki index is missing tmlus ${command.command}`);
+  assert.match(commandWiki, new RegExp(`### \\d+\\.\\d+ \`tmlus ${escapedCommand}\``), `Command Wiki reference is missing tmlus ${command.command}`);
+}
+
 for (const oldCommand of ['help', 'skills', 'tools']) {
   assert.doesNotMatch(help.stdout, new RegExp(['tmlus', `--${oldCommand}`].join(' ')));
 }
 
-for (const oldCommand of ['help', 'skills', 'tools', 'ide', 'version', 'tml-spec', 'work-mode']) {
+for (const oldCommand of ['help', 'skills', 'tools', 'ide', 'version', 'update', 'tml-spec', 'work-mode']) {
   let failed = false;
   try {
     await run([`--${oldCommand}`]);
@@ -47,6 +57,7 @@ for (const oldCommand of ['help', 'skills', 'tools', 'ide', 'version', 'tml-spec
 const englishHelp = await run(['help', '--lang', 'en']);
 assert.match(englishHelp.stdout, /AI IDE environment initialization/);
 assert.match(englishHelp.stdout, /External Tool discovery and installation/);
+assert.match(englishHelp.stdout, /global npm installation/);
 assert.match(englishHelp.stdout, /TML Docs structure initialization/);
 assert.match(englishHelp.stdout, /Project work mode initialization/);
 

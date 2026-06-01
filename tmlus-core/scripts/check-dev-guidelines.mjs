@@ -7,6 +7,7 @@ import { promisify } from 'node:util';
 import { selectionRenderTestApi } from '../dist/ui/selection.js';
 import { SKILL_CATALOG, findSkillById } from '../dist/catalog/skills.js';
 import { findToolById } from '../dist/catalog/tools.js';
+import { COMMAND_REGISTRY } from '../dist/cli/command-registry.js';
 
 const execFileAsync = promisify(execFile);
 const repoRoot = path.resolve('..');
@@ -65,6 +66,7 @@ async function assertSandboxWritable() {
 
 const gitignore = readFileSync(path.join(repoRoot, '.gitignore'), 'utf8');
 assert.match(gitignore, /(^|\n)tmlus-test\/(\n|$)/);
+const commandWiki = readFileSync(path.join(repoRoot, 'docs', 'TmlUs命令Wiki.md'), 'utf8');
 
 const longInteractiveLines = selectionRenderTestApi.normalizeFrameLines([
   '* Skills',
@@ -89,6 +91,12 @@ const help = await run(['help']);
 assert.match(help.stdout, /ide/);
 assert.match(help.stdout, /skills/);
 assert.match(help.stdout, /tools/);
+assert.match(help.stdout, /update/);
+for (const command of COMMAND_REGISTRY) {
+  const escapedCommand = command.command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  assert.match(commandWiki, new RegExp(`\\| \`tmlus ${escapedCommand}\` \\|`), `Command Wiki index is missing tmlus ${command.command}`);
+  assert.match(commandWiki, new RegExp(`### \\d+\\.\\d+ \`tmlus ${escapedCommand}\``), `Command Wiki reference is missing tmlus ${command.command}`);
+}
 for (const oldCommand of ['help', 'skills', 'tools']) {
   assert.doesNotMatch(help.stdout, new RegExp(['tmlus', `--${oldCommand}`].join(' ')));
 }
@@ -97,7 +105,7 @@ assert.doesNotMatch(help.stdout, /\u001B\[/);
 const english = await run(['help', '--lang', 'en']);
 assert.match(english.stdout, /AI Skill discovery and installation/);
 
-for (const oldCommand of ['help', 'skills', 'tools', 'ide', 'version', 'tml-spec', 'work-mode']) {
+for (const oldCommand of ['help', 'skills', 'tools', 'ide', 'version', 'update', 'tml-spec', 'work-mode']) {
   let failed = false;
   try {
     await run([`--${oldCommand}`]);

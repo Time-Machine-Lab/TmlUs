@@ -169,3 +169,23 @@ export interface WorkModeInitializationResult {
   status: 'initialized' | 'existing' | 'skipped' | 'failed';
   message: string;
 }
+
+export type TmlusUpdateStatus =
+  | 'already-current'
+  | 'update-available'
+  | 'updated'
+  | 'verification-failed'
+  | 'unsupported-invocation'
+  | 'failed';
+
+export type TmlusUpdateFailureStage = 'latest-version' | 'install' | 'verification';
+
+export interface TmlusUpdateResult {
+  status: TmlusUpdateStatus;
+  currentVersion: string;
+  latestVersion?: string;
+  verifiedVersion?: string;
+  message: string;
+  manualCommand?: string;
+  failureStage?: TmlusUpdateFailureStage;
+}

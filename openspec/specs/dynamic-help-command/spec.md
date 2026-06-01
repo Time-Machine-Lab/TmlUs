@@ -54,9 +54,15 @@ Help output MUST remain readable without color, MUST avoid decorative animation,
 
 ### Requirement: Help includes requested command families
 
-TmlUs help output SHALL include the `ide` and `skills` command families.
+TmlUs help output SHALL include the `init`, `ide`, `skills`, `tools`, `tml-spec`, `work-mode`, and `update` command families.
 
-The help entry for `ide` MUST explain optional direct IDE-name arguments. The help entry for `skills` MUST explain optional Skill IDs and target IDE arguments.
+The help entry for `init` MUST explain guided project initialization and `--from <step>` resume usage. The help entry for `ide` MUST explain optional direct IDE-name arguments. The help entry for `skills` MUST explain optional Skill IDs and target IDE arguments. The help entry for `tools` MUST explain optional direct Tool IDs and MUST include CodeGraph as an example Tool. The help entry for `tml-spec` MUST explain TML Docs structure initialization. The help entry for `work-mode` MUST explain supported project work modes. The help entry for `update` MUST explain that it checks the installed TmlUs CLI version against the latest npm release and updates when a newer version is available.
+
+#### Scenario: Help describes project initialization
+
+- **WHEN** the user reads `tmlus help`
+- **THEN** they can see that `tmlus init` guides project initialization
+- **AND** they can see that `tmlus init --from <step>` resumes from a named step
 
 #### Scenario: Help describes IDE initialization
 
@@ -67,3 +73,28 @@ The help entry for `ide` MUST explain optional direct IDE-name arguments. The he
 
 - **WHEN** the user reads `tmlus help`
 - **THEN** they can see that `tmlus skills` lists or installs maintained skills and can target AI IDE environments
+
+#### Scenario: Help describes Tool installation
+
+- **WHEN** the user reads `tmlus help`
+- **THEN** they can see that `tmlus tools` lists or installs maintained external tools and can accept a Tool ID such as `codegraph`
+
+#### Scenario: Help describes TML Docs structure initialization
+
+- **WHEN** the user reads `tmlus help`
+- **THEN** they can see that `tmlus tml-spec` initializes the standard TML Docs folder structure
+
+#### Scenario: Help describes work-mode initialization
+
+- **WHEN** the user reads `tmlus help`
+- **THEN** they can see that `tmlus work-mode` initializes project work mode and supports `openspec` or `skip`
+
+#### Scenario: Help describes CLI update
+
+- **WHEN** the user reads `tmlus help`
+- **THEN** they can see that `tmlus update` checks for and installs a newer TmlUs CLI release when available
+
+#### Scenario: English help describes CLI update
+
+- **WHEN** the user reads English help output
+- **THEN** the update entry uses English command metadata from the command registry
