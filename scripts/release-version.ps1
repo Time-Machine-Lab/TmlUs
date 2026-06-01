@@ -48,6 +48,30 @@ function Invoke-Npm {
   }
 }
 
+function Invoke-NodeScript {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Script,
+    [Parameter(Mandatory = $true)]
+    [string[]]$Arguments
+  )
+
+  $scriptPath = Join-Path ([System.IO.Path]::GetTempPath()) "tmlus-release-version-$([guid]::NewGuid().ToString('N')).cjs"
+  Set-Content -LiteralPath $scriptPath -Value $Script -Encoding UTF8
+
+  try {
+    & node $scriptPath @Arguments
+    if ($LASTEXITCODE -ne 0) {
+      throw 'node version update script failed.'
+    }
+  }
+  finally {
+    if (Test-Path -LiteralPath $scriptPath) {
+      Remove-Item -LiteralPath $scriptPath -Force
+    }
+  }
+}
+
 function Assert-VersionFormat {
   param([Parameter(Mandatory = $true)][string]$Value)
 
@@ -114,6 +138,40 @@ function Get-PackageVersion {
   return [string]$package.version
 }
 
+function Set-PackageVersions {
+  param(
+    [Parameter(Mandatory = $true)][string]$PackageJsonPath,
+    [Parameter(Mandatory = $true)][string]$PackageLockPath,
+    [Parameter(Mandatory = $true)][string]$NextVersion
+  )
+
+  $script = @'
+const fs = require("fs");
+const [packageJsonPath, packageLockPath, nextVersion] = process.argv.slice(2);
+
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function writeJson(filePath, value) {
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+const packageJson = readJson(packageJsonPath);
+packageJson.version = nextVersion;
+writeJson(packageJsonPath, packageJson);
+
+const packageLock = readJson(packageLockPath);
+packageLock.version = nextVersion;
+if (packageLock.packages && packageLock.packages[""]) {
+  packageLock.packages[""].version = nextVersion;
+}
+writeJson(packageLockPath, packageLock);
+'@
+
+  Invoke-NodeScript -Script $script -Arguments @($PackageJsonPath, $PackageLockPath, $NextVersion)
+}
+
 try {
   $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
   $packageDirectory = Join-Path $repoRoot 'tmlus-core'
@@ -129,6 +187,9 @@ try {
   }
   if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     throw 'npm was not found. Install Node.js/npm and make sure they are available in PATH.'
+  }
+  if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+    throw 'node was not found. Install Node.js and make sure it is available in PATH.'
   }
   if (-not (Test-Path -LiteralPath $packageJsonPath)) {
     throw "package.json not found: $packageJsonPath"
@@ -156,7 +217,10 @@ try {
 
   $dirtyVersionFiles = Invoke-Git -Arguments (@('status', '--porcelain', '--') + $versionFiles) -Capture
   if ($dirtyVersionFiles) {
-    throw "Version files already have uncommitted changes. Commit or stash them before releasing:`n$dirtyVersionFiles"
+    Write-Host 'Warning: version files already have uncommitted changes.'
+    Write-Host 'These existing changes will be included in the release commit together with the version bump:'
+    Write-Host $dirtyVersionFiles
+    Write-Host ''
   }
 
   if (-not $Version) {
@@ -211,7 +275,7 @@ try {
     }
   }
 
-  Invoke-Npm -Arguments @('version', $Version, '--no-git-tag-version') -WorkingDirectory $packageDirectory
+  Set-PackageVersions -PackageJsonPath $packageJsonPath -PackageLockPath $packageLockPath -NextVersion $Version
 
   if (-not $SkipBuild) {
     Invoke-Npm -Arguments @('run', 'build') -WorkingDirectory $packageDirectory
@@ -221,6 +285,7 @@ try {
   if ($updatedVersion -ne $Version) {
     throw "Version update check failed. Expected: $Version, actual: $updatedVersion"
   }
+  Write-Host "Updated package files to $Version."
 
   Invoke-Git -Arguments (@('add', '--') + $versionFiles)
   Invoke-Git -Arguments (@('commit', '-m', $commitMessage, '--') + $versionFiles)
