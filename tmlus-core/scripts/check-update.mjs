@@ -3,6 +3,9 @@ import {
   compareSemverVersions,
   runTmlusUpdate
 } from '../dist/app/update-flow.js';
+import {
+  withTmlusUpdateAnimation
+} from '../dist/ui/output.js';
 
 function adapter(responses, calls = []) {
   return {
@@ -27,6 +30,42 @@ assert.equal(compareSemverVersions('1.0.1', '1.0.0'), 1);
 assert.equal(compareSemverVersions('1.0.0', '1.0.1'), -1);
 assert.equal(compareSemverVersions('1.10.0', '1.2.0'), 1);
 assert.equal(compareSemverVersions('1.0.0-beta.1', '1.0.0'), -1);
+
+{
+  const writes = [];
+  const result = await withTmlusUpdateAnimation(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 8));
+    return 'done';
+  }, {
+    env: {},
+    intervalMs: 1,
+    stdout: {
+      isTTY: true,
+      write(chunk) {
+        writes.push(chunk);
+      }
+    }
+  });
+
+  assert.equal(result, 'done');
+  assert.match(writes.join(''), /TmlUs update is checking the latest version/);
+  assert.match(writes.join(''), /\r\s+\r$/);
+}
+
+{
+  const writes = [];
+  await withTmlusUpdateAnimation(async () => 'quiet', {
+    quiet: true,
+    stdout: {
+      isTTY: true,
+      write(chunk) {
+        writes.push(chunk);
+      }
+    }
+  });
+
+  assert.deepEqual(writes, []);
+}
 
 {
   const calls = [];

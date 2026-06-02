@@ -18,6 +18,17 @@ export interface OutputOptions {
   quiet?: boolean;
 }
 
+interface ProgressStream {
+  isTTY?: boolean;
+  write(chunk: string): unknown;
+}
+
+export interface TmlusUpdateAnimationOptions extends OutputOptions {
+  env?: NodeJS.ProcessEnv;
+  intervalMs?: number;
+  stdout?: ProgressStream;
+}
+
 const color = {
   pink: '\u001B[38;2;255;143;216m',
   aqua: '\u001B[38;2;136;247;255m',
@@ -66,6 +77,50 @@ export function printSection(title: string, options: OutputOptions = {}): void {
 export function printInfo(message: string, options: OutputOptions = {}): void {
   if (!options.quiet) {
     console.log(message);
+  }
+}
+
+function shouldAnimateProgress(options: TmlusUpdateAnimationOptions = {}): boolean {
+  const env = options.env ?? process.env;
+  const stdout = options.stdout ?? process.stdout;
+
+  if (options.quiet || !stdout.isTTY || env.CI || env.TERM === 'dumb') {
+    return false;
+  }
+
+  return true;
+}
+
+export async function withTmlusUpdateAnimation<T>(
+  task: () => Promise<T>,
+  options: TmlusUpdateAnimationOptions = {}
+): Promise<T> {
+  if (!shouldAnimateProgress(options)) {
+    return task();
+  }
+
+  const stdout = options.stdout ?? process.stdout;
+  const frames = ['(^_^)', '(^o^)', '(^.^)', '(^_~)'];
+  const message = 'TmlUs update is checking the latest version';
+  let frame = 0;
+  let line = `${frames[frame]} ${message}`;
+  stdout.write(line);
+
+  const timer = setInterval(() => {
+    frame = (frame + 1) % frames.length;
+    line = `${frames[frame]} ${message}`;
+    stdout.write(`\r${line}`);
+  }, options.intervalMs ?? 120);
+
+  try {
+    const result = await task();
+    clearInterval(timer);
+    stdout.write(`\r${' '.repeat(line.length)}\r`);
+    return result;
+  } catch (error) {
+    clearInterval(timer);
+    stdout.write(`\r${' '.repeat(line.length)}\r`);
+    throw error;
   }
 }
 

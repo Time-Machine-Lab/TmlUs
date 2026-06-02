@@ -47,7 +47,8 @@ import {
   renderToolInstallProgress,
   renderToolInstallSummary,
   renderToolSelectionHint,
-  renderWorkModeInitializationSummary
+  renderWorkModeInitializationSummary,
+  withTmlusUpdateAnimation
 } from '../ui/output.js';
 import {
   SELECTION_CANCELLED,
@@ -471,11 +472,14 @@ async function runTools(): Promise<void> {
 
 async function runUpdate(): Promise<void> {
   await renderStartupBanner({ args });
-  const result = await runTmlusUpdate({
-    currentVersion: packageJson.version,
-    packageName: packageJson.name,
-    env: process.env
-  });
+  const result = await withTmlusUpdateAnimation(
+    () => runTmlusUpdate({
+      currentVersion: packageJson.version,
+      packageName: packageJson.name,
+      env: process.env
+    }),
+    { quiet }
+  );
   renderTmlusUpdateSummary(result, { quiet });
 
   if (tmlusUpdateHasFailure(result)) {
