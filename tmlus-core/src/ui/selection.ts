@@ -893,9 +893,7 @@ export async function selectSearchSourceIds(sources: SkillSearchSource[]): Promi
       id: source.id,
       label: source.displayName,
       tone: 'skill',
-      detail: source.type === 'catalog'
-        ? 'Official catalog'
-        : source.source ?? source.category
+      detail: source.source ?? source.category
     })),
     pageSize: 6
   });

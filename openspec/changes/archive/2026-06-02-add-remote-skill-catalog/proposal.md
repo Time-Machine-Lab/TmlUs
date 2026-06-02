@@ -8,8 +8,9 @@ This change keeps TmlUs local-first while moving Skill catalog data to a GitHub-
 
 - Add a remote official Skill catalog under `Time-Machine-Lab/TmlUs` at `data/skills/`, with `Humanizer-zh` included in category `内容创作`.
 - Make `tmlus skills` and the Skill step in `tmlus init` load the official catalog from the remote data file by default, using a multi-hour local cache.
+- Show lightweight loading feedback while `tmlus skills` loads the Skill catalog in interactive terminals.
 - Keep the bundled catalog as an offline and network-failure fallback so existing workflows continue to work without GitHub access.
-- Add a remote search source registry so `Time-Machine-Lab/TmlUs` is the default search source and `Time-Machine-Lab/TML-Skills` remains an additional remote Skill source.
+- Add a remote search source registry for extra remote Skill sources; `Time-Machine-Lab/TML-Skills` is the default search source while `Time-Machine-Lab/TmlUs` remains the official catalog source used directly by `tmlus skills`.
 - Preserve the existing install strategies (`github-directory`, `github-root-skill`, `github-skill-bundle`, `local-directory`) and AI IDE target handling.
 - Add configuration hooks for tests and advanced users to override the catalog URL, cache TTL, and remote catalog behavior.
 
@@ -18,6 +19,7 @@ Non-goals:
 - Do not introduce hosted accounts, a backend service, dashboards, databases, or a remote API controlled by TmlUs.
 - Do not remove local fallback behavior or require network access for all Skill commands.
 - Do not change the Skill installation file layout for Codex, Claude, Cursor, Trae, or CodeBuddy.
+- Do not add `TmlUs Official` to the Search Source list; it is the main Skill catalog, not an extra search source.
 - Do not make `TML-Skills` the official default catalog; it remains a remote search/content source.
 
 ## Capabilities

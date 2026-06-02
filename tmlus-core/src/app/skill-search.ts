@@ -1,7 +1,6 @@
 import { COMMON_SKILL_TARGETS } from '../catalog/skills.js';
 import {
   BUNDLED_SKILL_SEARCH_SOURCE_REGISTRY,
-  loadSkillCatalog,
   loadSkillSearchSourceRegistry,
   type SkillSearchSource,
   type SkillSearchSourceRegistry
@@ -57,11 +56,6 @@ export async function searchRemoteSkills(sourceIds: string[]): Promise<{ skills:
   const skills: SkillDefinition[] = [];
 
   for (const source of resolved.sources) {
-    if (source.type === 'catalog') {
-      skills.push(...await loadSkillCatalog());
-      continue;
-    }
-
     if (!source.source) {
       continue;
     }

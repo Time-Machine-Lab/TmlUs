@@ -26,12 +26,12 @@ The Skill catalog MUST be loaded from the official remote catalog by default, wi
 
 TmlUs SHALL support explicit remote Skill discovery through configured search sources.
 
-TmlUs MUST use the `tmlus` source by default for `tmlus skills search`. TmlUs MUST allow users to select other configured sources such as `tml-skills`. TmlUs SHALL still defer semantic search, ranking, online recommendation, and personalized recommendation behavior.
+TmlUs MUST use the `tml-skills` source by default for `tmlus skills search`. TmlUs MUST NOT show the official TmlUs catalog as a Search Source because `tmlus skills` already uses it directly. TmlUs SHALL still defer semantic search, ranking, online recommendation, and personalized recommendation behavior.
 
-#### Scenario: Default search uses TmlUs source
+#### Scenario: Default search uses TML-Skills source
 
 - **WHEN** the user runs `tmlus skills search`
-- **THEN** TmlUs discovers remote Skills from the configured `tmlus` search source
+- **THEN** TmlUs discovers remote Skills from the configured `tml-skills` search source
 
 #### Scenario: User selects TML-Skills source
 
@@ -42,3 +42,21 @@ TmlUs MUST use the `tmlus` source by default for `tmlus skills search`. TmlUs MU
 
 - **WHEN** the user runs `tmlus skills`
 - **THEN** the command does not expose semantic ranking, online recommendation, or personalized recommendation behavior
+
+## ADDED Requirements
+
+### Requirement: Skill catalog loading feedback
+
+TmlUs SHALL show lightweight Skill catalog loading feedback when `tmlus skills` loads the catalog in an interactive terminal.
+
+The loading feedback MUST be suppressed in quiet mode, CI, non-TTY output, and dumb terminal environments.
+
+#### Scenario: Interactive catalog loading shows progress
+
+- **WHEN** the user runs `tmlus skills` in an interactive terminal
+- **THEN** TmlUs shows a small progress indicator or animation while loading the Skill catalog
+
+#### Scenario: Non-interactive catalog loading stays clean
+
+- **WHEN** the user runs `tmlus skills` in CI, quiet mode, non-TTY output, or a dumb terminal
+- **THEN** TmlUs does not show loading animation output

@@ -181,7 +181,7 @@ Skill Catalog 额外规则：
 - GitHub 远程下载适配器必须支持 `GITHUB_TOKEN` 或 `GH_TOKEN`，并在 403 时展示 GitHub 返回的错误原因、rate limit reset 时间和 token 修复建议。
 - GitHub 下载不得只依赖 `api.github.com/repos/.../contents`。当 Contents API 限流或失败时，应 fallback 到 `codeload.github.com` 的 zip archive，再从解压目录复制需要的文件或子目录。
 - archive fallback 必须跨平台处理路径与跨盘符复制；不能依赖 `rename` 跨文件系统移动目录，应使用 copy 后清理临时目录。
-- 远程 Skill 搜索来源必须配置化，来源注册表应维护在 `data/skills/search-sources.json`。默认搜索源为 TmlUs 官方目录，TML-Skills 等外部仓库作为可选搜索源。搜索阶段只负责发现远程 skill 并生成资源定义，后续安装必须复用统一 Skill 安装流程和目标 AI IDE 适配器，禁止为搜索结果另写一套安装逻辑。
+- 远程 Skill 搜索来源必须配置化，来源注册表应维护在 `data/skills/search-sources.json`。TmlUs 官方目录不作为 Search Source 展示；`tmlus skills` 直接加载官方目录，`tmlus skills search` 用于搜索 TML-Skills 等额外远程仓库。搜索阶段只负责发现远程 skill 并生成资源定义，后续安装必须复用统一 Skill 安装流程和目标 AI IDE 适配器，禁止为搜索结果另写一套安装逻辑。
 - 对大型 bundle 资源，常规测试不应每次全量下载；应至少测试安装策略解析、小型远程目录下载和一个代表性 bundle。
 
 Recipe 表达一组团队认可的初始化组合，例如某类项目需要哪些文档目录、哪些 AI IDE 能力、哪些外部工具和哪些 OpenSpec 配置。Use Case 执行 Recipe，Catalog 描述资源，Adapter 处理差异。

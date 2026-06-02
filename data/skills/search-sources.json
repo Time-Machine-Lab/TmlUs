@@ -1,14 +1,8 @@
 {
   "version": 1,
   "updatedAt": "2026-06-02T00:00:00.000Z",
-  "defaultSourceId": "tmlus",
+  "defaultSourceId": "tml-skills",
   "sources": [
-    {
-      "id": "tmlus",
-      "displayName": "TmlUs Official",
-      "type": "catalog",
-      "category": "TmlUs"
-    },
     {
       "id": "tml-skills",
       "aliases": [

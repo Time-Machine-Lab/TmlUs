@@ -12,7 +12,6 @@ import {
 } from '../dist/app/skill-install.js';
 import {
   resolveSkillSearchSources,
-  searchRemoteSkills
 } from '../dist/app/skill-search.js';
 
 const repoRoot = path.resolve('..');
@@ -90,43 +89,13 @@ await withTempCache(async (cacheDir) => {
 await withTempCache(async (cacheDir) => {
   const registry = await loadSkillSearchSourceRegistry({ env: testEnv(cacheDir) });
   const defaultResolved = resolveSkillSearchSources([], registry);
-  assert.deepEqual(defaultResolved.sources.map((source) => source.id), ['tmlus']);
+  assert.deepEqual(defaultResolved.sources.map((source) => source.id), ['tml-skills']);
 
   const explicitResolved = resolveSkillSearchSources(['tml-skills'], registry);
   assert.deepEqual(explicitResolved.sources.map((source) => source.id), ['tml-skills']);
 
   const aliasResolved = resolveSkillSearchSources(['tml-team'], registry);
   assert.deepEqual(aliasResolved.sources.map((source) => source.id), ['tml-skills']);
-});
-
-await withTempCache(async (cacheDir) => {
-  const previousCatalogUrl = process.env.TMLUS_SKILL_CATALOG_URL;
-  const previousSourcesUrl = process.env.TMLUS_SKILL_SEARCH_SOURCES_URL;
-  const previousCacheDir = process.env.TMLUS_SKILL_CACHE_DIR;
-  process.env.TMLUS_SKILL_CATALOG_URL = fixtureCatalog;
-  process.env.TMLUS_SKILL_SEARCH_SOURCES_URL = fixtureSources;
-  process.env.TMLUS_SKILL_CACHE_DIR = cacheDir;
-  try {
-    const result = await searchRemoteSkills([]);
-    assert.equal(result.unknown.length, 0);
-    assert.equal(result.skills.some((skill) => skill.id === 'fixture-skill'), true);
-  } finally {
-    if (previousCatalogUrl === undefined) {
-      delete process.env.TMLUS_SKILL_CATALOG_URL;
-    } else {
-      process.env.TMLUS_SKILL_CATALOG_URL = previousCatalogUrl;
-    }
-    if (previousSourcesUrl === undefined) {
-      delete process.env.TMLUS_SKILL_SEARCH_SOURCES_URL;
-    } else {
-      process.env.TMLUS_SKILL_SEARCH_SOURCES_URL = previousSourcesUrl;
-    }
-    if (previousCacheDir === undefined) {
-      delete process.env.TMLUS_SKILL_CACHE_DIR;
-    } else {
-      process.env.TMLUS_SKILL_CACHE_DIR = previousCacheDir;
-    }
-  }
 });
 
 console.log('skill catalog checks passed');

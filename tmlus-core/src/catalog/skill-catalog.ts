@@ -44,7 +44,7 @@ export interface RemoteSkillDefinition {
   targets: 'common' | SkillInstallTarget[];
 }
 
-export type SkillSearchSourceType = 'catalog' | 'github-directory';
+export type SkillSearchSourceType = 'github-directory';
 
 export interface SkillSearchSource {
   id: string;
@@ -78,14 +78,8 @@ interface CacheEnvelope<T> {
 }
 
 export const BUNDLED_SKILL_SEARCH_SOURCE_REGISTRY: SkillSearchSourceRegistry = {
-  defaultSourceId: 'tmlus',
+  defaultSourceId: 'tml-skills',
   sources: [
-    {
-      id: 'tmlus',
-      displayName: 'TmlUs Official',
-      type: 'catalog',
-      category: 'TmlUs'
-    },
     {
       id: 'tml-skills',
       aliases: ['tml-team'],
@@ -277,12 +271,12 @@ function normalizeSearchSource(value: unknown, index: number): SkillSearchSource
   }
 
   const type = stringField(value, 'type', label) as SkillSearchSourceType;
-  if (type !== 'catalog' && type !== 'github-directory') {
+  if (type !== 'github-directory') {
     throw new Error(`${label}.type is unsupported.`);
   }
 
   const source = value.source === undefined ? undefined : stringField(value, 'source', label);
-  if (type === 'github-directory' && !source) {
+  if (!source) {
     throw new Error(`${label}.source is required for github-directory sources.`);
   }
 
@@ -306,7 +300,7 @@ export function normalizeSkillSearchSourcesDocument(value: unknown): SkillSearch
   const sources = value.sources.map(normalizeSearchSource);
   const defaultSourceId = typeof value.defaultSourceId === 'string' && value.defaultSourceId.trim()
     ? value.defaultSourceId.trim().toLowerCase()
-    : 'tmlus';
+    : sources[0]?.id;
   if (!sources.some((source) => source.id === defaultSourceId)) {
     throw new Error('searchSources.defaultSourceId must match a source ID.');
   }

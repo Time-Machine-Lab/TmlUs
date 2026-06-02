@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Specify official remote Skill catalog loading, caching, fallback behavior, configuration hooks, and remote search source registry behavior.
+
+## Requirements
 
 ### Requirement: Official remote Skill catalog
 
@@ -64,17 +68,22 @@ Fallback order MUST be fresh cache, remote fetch, stale cache, then bundled cata
 
 TmlUs SHALL define remote Skill search sources as static data in the `Time-Machine-Lab/TmlUs` repository under `data/skills/search-sources.json`.
 
-The registry MUST support a default `tmlus` source backed by the official TmlUs catalog and an additional `tml-skills` source backed by `github:Time-Machine-Lab/TML-Skills/skills`.
+The registry MUST NOT include the official TmlUs catalog as a Search Source. The registry MUST support `tml-skills` as the default source backed by `github:Time-Machine-Lab/TML-Skills/skills`.
 
-#### Scenario: Default search source is TmlUs
+#### Scenario: Default search source is TML-Skills
 
 - **WHEN** the user runs `tmlus skills search` without specifying a source
-- **THEN** TmlUs uses the `tmlus` search source
+- **THEN** TmlUs uses the `tml-skills` search source
 
 #### Scenario: TML-Skills remains searchable
 
 - **WHEN** the user runs `tmlus skills search --search tml-skills`
 - **THEN** TmlUs searches `github:Time-Machine-Lab/TML-Skills/skills`
+
+#### Scenario: TmlUs Official is not a search source
+
+- **WHEN** the user selects a Search Source
+- **THEN** TmlUs does not show `TmlUs Official` as a search source option
 
 ### Requirement: Remote catalog configuration
 

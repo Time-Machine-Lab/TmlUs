@@ -14,8 +14,9 @@ This design keeps the CLI local-first. GitHub is treated as a static resource so
 - Cache remote catalog data locally for a multi-hour TTL so repeated `tmlus skills` usage does not hit GitHub every time.
 - Fall back safely to fresh cache, stale cache, or bundled catalog when the network or remote data is unavailable.
 - Add `Humanizer-zh` as an official Skill in category `内容创作`.
-- Move remote search source definitions to `Time-Machine-Lab/TmlUs/data/skills/search-sources.json`.
-- Make `tmlus` the default search source and keep `tml-skills` as an additional remote search source.
+- Move extra remote search source definitions to `Time-Machine-Lab/TmlUs/data/skills/search-sources.json`.
+- Keep `TmlUs Official` out of the Search Source list because `tmlus skills` already loads it as the main catalog.
+- Make `tml-skills` the default search source for `tmlus skills search`.
 - Reuse existing Skill install strategies and AI IDE target resolution.
 
 **Non-Goals:**
@@ -73,9 +74,9 @@ Rationale: TmlUs writes into user project directories. Even official remote data
 
 ### Decision 5: Separate catalog data from search source registry
 
-`catalog.json` defines official Skills shown by default. `search-sources.json` defines named remote sources for `tmlus skills search`.
+`catalog.json` defines official Skills shown by default. `search-sources.json` defines extra named remote sources for `tmlus skills search`.
 
-The default source ID will be `tmlus`, backed by the official TmlUs catalog. `tml-skills` will point to `github:Time-Machine-Lab/TML-Skills/skills` as a GitHub directory source.
+The official TmlUs catalog will not be registered as a Search Source. The default search source ID will be `tml-skills`, pointing to `github:Time-Machine-Lab/TML-Skills/skills` as a GitHub directory source.
 
 Alternative considered: use one file for both catalog and sources.
 
@@ -87,11 +88,11 @@ Rationale: the catalog answers "what does TmlUs officially list?" while sources 
 - Remote catalog schema drifts -> version the catalog format and reject unsupported versions with a clear fallback.
 - Tests become flaky if they depend on live GitHub -> expose URL/cache overrides and test with local fixtures or mocked fetch behavior.
 - Default remote loading may surprise users in restricted networks -> keep offline fallback and provide an opt-out environment variable.
-- Search source behavior can become confusing because `tmlus skills` and `tmlus skills search` both see the official catalog -> document that default listing is the official catalog and search can target additional sources.
+- Search source behavior can become confusing if the official catalog appears in both places -> keep `TmlUs Official` out of Search Source and document that `tmlus skills` is the official catalog while `tmlus skills search` searches additional sources.
 
 ## Migration Plan
 
-1. Add `data/skills/catalog.json` and `data/skills/search-sources.json` with entries matching the current bundled catalog plus `humanizer-zh`.
+1. Add `data/skills/catalog.json` and `data/skills/search-sources.json` with entries matching the current bundled catalog plus `humanizer-zh`, while keeping Search Source limited to extra sources such as `tml-skills`.
 2. Implement catalog/source registry loading with cache and validation.
 3. Update Skill flows to accept a loaded catalog instead of directly reading static arrays.
 4. Keep bundled catalog exports for fallback and tests.

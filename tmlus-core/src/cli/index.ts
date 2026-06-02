@@ -228,11 +228,37 @@ async function runWorkMode(): Promise<void> {
   }
 }
 
+async function withSkillCatalogLoading<T>(task: () => Promise<T>): Promise<T> {
+  if (quiet || !process.stdout.isTTY || process.env.CI || process.env.TERM === 'dumb') {
+    return task();
+  }
+
+  const bars = ['[    ]', '[=   ]', '[==  ]', '[=== ]', '[====]'];
+  let frame = 0;
+  const message = 'Loading Skill catalog';
+  process.stdout.write(`${message} ${bars[frame]}`);
+  const timer = setInterval(() => {
+    frame = (frame + 1) % bars.length;
+    process.stdout.write(`\r${message} ${bars[frame]}`);
+  }, 120);
+
+  try {
+    const result = await task();
+    clearInterval(timer);
+    process.stdout.write(`\rLoaded Skill catalog      \n`);
+    return result;
+  } catch (error) {
+    clearInterval(timer);
+    process.stdout.write(`\rSkill catalog load failed\n`);
+    throw error;
+  }
+}
+
 async function runSkills(): Promise<void> {
   let skillIds = positionalValuesForCommand('skills');
   const explicitIdeNames = splitValues(valueAfter('--ide'));
   const explicitSearchSourceNames = splitValues(valueAfter('--search'));
-  const catalog = await loadDefaultSkills();
+  const catalog = await withSkillCatalogLoading(() => loadDefaultSkills());
   let activeSkillPool = catalog;
   let remoteSkillTitle = 'Remote Skills';
 
