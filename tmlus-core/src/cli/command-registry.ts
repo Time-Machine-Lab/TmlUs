@@ -100,8 +100,8 @@ export const COMMAND_REGISTRY: CommandMetadata[] = [
     ],
     parameterNotes: [
       {
-        zh: '可通过列表底部 Search 或 `tmlus skills search` 进入远程 Skill 搜索，目前支持 TML Team 来源。',
-        en: 'Use the Search row or `tmlus skills search` to discover remote skills. TML Team is supported for now.'
+        zh: '可通过列表底部 Search 或 `tmlus skills search` 进入远程 Skill 搜索，默认来源为 TmlUs 官方目录，也可选择其他配置化来源。',
+        en: 'Use the Search row or `tmlus skills search` to discover remote skills. The default source is the TmlUs official catalog, and other configured sources can be selected.'
       },
       {
         zh: '不指定 IDE 时，默认安装到当前项目所有已存在的受支持 AI IDE 环境。',

@@ -17,7 +17,8 @@ async function run(args, cwd = process.cwd()) {
     env: {
       ...process.env,
       CI: '1',
-      TMLUS_NO_BANNER: '1'
+      TMLUS_NO_BANNER: '1',
+      TMLUS_DISABLE_REMOTE_CATALOG: '1'
     }
   });
 }
@@ -86,6 +87,7 @@ try {
   assert.match(skillList.stdout, /tml-docs-spec-generate/);
   assert.match(skillList.stdout, /Skill Creator/);
   assert.match(skillList.stdout, /DB Skills/);
+  assert.match(skillList.stdout, /Humanizer-zh/);
 
   const tmlSpec = await run(['tml-spec'], workspace);
   assert.match(tmlSpec.stdout, /TML Docs structure result/);

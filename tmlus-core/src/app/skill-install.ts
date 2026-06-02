@@ -1,7 +1,12 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findEnvironmentByName } from '../catalog/environments.js';
-import { findSkillById, SKILL_CATALOG, supportedSkillIds } from '../catalog/skills.js';
+import { SKILL_CATALOG } from '../catalog/skills.js';
+import {
+  findSkillInCatalog,
+  loadSkillCatalog,
+  supportedSkillIds
+} from '../catalog/skill-catalog.js';
 import type { EnvironmentDefinition, SkillDefinition, SkillInstallResult } from '../core/types.js';
 import { initializeEnvironments, selectDefaultIdeTargets } from './ide-init.js';
 import { copyDirectory, ensureDirectory, pathExists, resolveProjectPath } from '../workspace/fs.js';
@@ -12,13 +17,13 @@ const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(currentDir, '..', '..');
 const repositoryRoot = path.resolve(packageRoot, '..');
 
-export function resolveSkillIds(ids: string[]): { skills: SkillDefinition[]; unknown: string[] } {
+export function resolveSkillIds(ids: string[], catalog: SkillDefinition[] = SKILL_CATALOG): { skills: SkillDefinition[]; unknown: string[] } {
   const skills: SkillDefinition[] = [];
   const unknown: string[] = [];
   const seen = new Set<string>();
 
   for (const id of ids) {
-    const skill = findSkillById(id);
+    const skill = findSkillInCatalog(id, catalog);
     if (!skill) {
       unknown.push(id);
       continue;
@@ -220,9 +225,13 @@ export function defaultSkills(): SkillDefinition[] {
   return SKILL_CATALOG;
 }
 
-export function unknownSkillMessage(unknown: string[]): string {
+export async function loadDefaultSkills(): Promise<SkillDefinition[]> {
+  return loadSkillCatalog();
+}
+
+export function unknownSkillMessage(unknown: string[], catalog: SkillDefinition[] = SKILL_CATALOG): string {
   return [
     `Unknown Skill: ${unknown.join(', ')}`,
-    `Supported Skills: ${supportedSkillIds()}`
+    `Supported Skills: ${supportedSkillIds(catalog)}`
   ].join('\n');
 }

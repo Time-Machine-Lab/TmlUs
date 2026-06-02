@@ -1,6 +1,6 @@
 import type { EnvironmentDefinition, SkillDefinition } from '../core/types.js';
 import { installSkills, resolveSkillIds, unknownSkillMessage } from './skill-install.js';
-import { defaultSkills } from './skill-install.js';
+import { loadDefaultSkills } from './skill-install.js';
 import { SELECTION_CANCELLED, selectInitSkillIds } from '../ui/selection.js';
 
 export const STARTER_SKILL_IDS = ['skill-creator', 'tml-docs-spec-generate'];
@@ -12,7 +12,8 @@ export type SkillSelectionOutcome =
   | { status: 'failed'; message: string };
 
 export async function selectSkillsForInit(): Promise<SkillSelectionOutcome> {
-  const selected = await selectInitSkillIds(defaultSkills());
+  const catalog = await loadDefaultSkills();
+  const selected = await selectInitSkillIds(catalog);
   if (selected === SELECTION_CANCELLED) {
     return { status: 'cancelled' };
   }
@@ -20,11 +21,11 @@ export async function selectSkillsForInit(): Promise<SkillSelectionOutcome> {
   const skillIds = selected?.includes(STARTER_DEFAULTS_SENTINEL)
     ? STARTER_SKILL_IDS
     : selected ?? STARTER_SKILL_IDS;
-  const resolved = resolveSkillIds(skillIds);
+  const resolved = resolveSkillIds(skillIds, catalog);
   if (resolved.unknown.length) {
     return {
       status: 'failed',
-      message: unknownSkillMessage(resolved.unknown)
+      message: unknownSkillMessage(resolved.unknown, catalog)
     };
   }
 

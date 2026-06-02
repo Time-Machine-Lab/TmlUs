@@ -12,7 +12,6 @@ import type {
   ToolInstallResult,
   WorkModeInitializationResult
 } from '../core/types.js';
-import { SKILL_CATALOG } from '../catalog/skills.js';
 import { TOOL_CATALOG } from '../catalog/tools.js';
 
 export interface OutputOptions {
@@ -112,17 +111,17 @@ export function renderIdeInitializationSummary(results: IdeInitializationResult[
   }
 }
 
-export function renderSkillCatalogPage(page = 1, pageSize = 8): void {
-  const totalPages = Math.max(1, Math.ceil(SKILL_CATALOG.length / pageSize));
+export function renderSkillCatalogPage(skills: SkillDefinition[], page = 1, pageSize = 8): void {
+  const totalPages = Math.max(1, Math.ceil(skills.length / pageSize));
   const safePage = Math.min(Math.max(page, 1), totalPages);
   const start = (safePage - 1) * pageSize;
-  const skills = SKILL_CATALOG.slice(start, start + pageSize);
+  const visibleSkills = skills.slice(start, start + pageSize);
 
   printSection(`Skill 列表 ${safePage}/${totalPages}`);
   console.log(`${paint('│', color.violet)}  ${paint(`${pad('Name', 24)} ${pad('Category', 10)} Description`, color.mint)}`);
   console.log(`${paint('│', color.violet)}  ${paint(`${'─'.repeat(24)} ${'─'.repeat(10)} ${'─'.repeat(52)}`, color.gray)}`);
 
-  for (const skill of skills) {
+  for (const skill of visibleSkills) {
     console.log(`${paint('│', color.violet)}  ${paint('◇', color.aqua)} ${pad(skill.name, 22)} ${pad(skill.category, 10)} ${skill.description}`);
     console.log(`${paint('│', color.violet)}    ID: ${skill.id}`);
     console.log(`${paint('│', color.violet)}    分类: ${skill.category}`);

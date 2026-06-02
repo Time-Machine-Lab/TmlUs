@@ -171,15 +171,22 @@ tmlus skills search --ide codex
 |------|------|
 | `[skillIds]` | 可选的 Skill ID 或别名，多个值可用逗号分隔。不传时进入交互式选择 |
 | `search` | 进入远程 Skill 搜索流程 |
-| `--search <source>` | 指定远程搜索来源。目前支持 TML Team 来源 |
+| `--search <source>` | 指定远程搜索来源。默认来源为 `tmlus`，可选来源包括 `tml-skills` |
 | `--ide <ideNames>` | 指定安装目标 AI IDE，多个值用逗号分隔 |
 
-当前内置 Skill：
+Skill 目录：
+
+- `tmlus skills` 默认读取 `Time-Machine-Lab/TmlUs` 仓库 `data/skills/catalog.json` 中维护的官方 Skill 目录，并使用本地缓存降低重复请求。
+- 远程目录不可用、缓存不可用或数据校验失败时，会退回到 CLI 包内置的 Skill fallback 目录。
+- `tmlus skills search` 默认使用 `tmlus` 来源，也可以通过 `--search tml-skills` 搜索 `Time-Machine-Lab/TML-Skills/skills`。
+
+当前官方 Skill：
 
 | ID | 名称 | 分类 | 说明 |
 |----|------|------|------|
 | `skill-creator` | Skill Creator | Skill创作 | 创建、评估和持续优化 AI Skill |
 | `tml-docs-spec-generate` | TML Docs Spec Generate | TML规范 | 基于 TML-Docs-Spec 模板生成标准化文档 |
+| `humanizer-zh` | Humanizer-zh | 内容创作 | 中文文本人性化编辑，减少 AI 写作痕迹并优化表达节奏 |
 | `frontend-slides` | Frontend Slides | 前端开发 | 生成高质量 HTML 演示文稿 |
 | `gsap-skills` | GSAP Skills | 前端开发 | 安装 GSAP 官方技能集合 |
 | `html-anything` | Html Anything | 前端开发 | 安装 HTML Anything 模板技能集合 |
@@ -192,6 +199,7 @@ tmlus skills search --ide codex
 - 当前没有可用目标环境时，会提示先运行 `tmlus ide <ide>` 或显式传入 `--ide <ide>`。
 - 安装流程默认幂等。目标 Skill 已存在时跳过，不静默覆盖用户已有内容。
 - 远程搜索只负责发现远程 Skill，安装仍复用统一 Skill 安装流程。
+- 可通过 `TMLUS_DISABLE_REMOTE_CATALOG=1` 禁用远程目录加载，或通过 `TMLUS_SKILL_CATALOG_URL`、`TMLUS_SKILL_SEARCH_SOURCES_URL`、`TMLUS_SKILL_CATALOG_TTL_HOURS` 调整远程目录与缓存行为。
 
 ### 3.7 `tmlus tools`
 

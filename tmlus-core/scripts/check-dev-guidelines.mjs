@@ -27,6 +27,7 @@ async function run(args, cwd = testRoot, extraEnv = {}) {
       ...process.env,
       CI: '1',
       TMLUS_NO_BANNER: '1',
+      TMLUS_DISABLE_REMOTE_CATALOG: '1',
       ...extraEnv
     }
   });
@@ -148,6 +149,7 @@ assert.match(skillList.stdout, /Skill Creator/);
 assert.match(skillList.stdout, /GSAP Skills/);
 assert.match(skillList.stdout, /Html Anything/);
 assert.match(skillList.stdout, /DB Skills/);
+assert.match(skillList.stdout, /Humanizer-zh/);
 assert.doesNotMatch(skillList.stdout, /Source/);
 assert.match(skillList.stdout, /ID: skill-creator/);
 assert.match(skillList.stdout, /ID: tml-docs-spec-generate/);
@@ -166,6 +168,7 @@ assert.equal(findSkillById('html-anythins').id, 'html-anything');
 assert.equal(findSkillById('gsap').installer.strategy, 'github-skill-bundle');
 assert.equal(findSkillById('frontend-slides').installer.strategy, 'github-root-skill');
 assert.equal(findSkillById('dbskill').installer.strategy, 'github-skill-bundle');
+assert.equal(findSkillById('humanizer').id, 'humanizer-zh');
 assert.equal(findToolById('codegraph').adapter, 'codegraph');
 assert.equal(findToolById('cg').id, 'codegraph');
 

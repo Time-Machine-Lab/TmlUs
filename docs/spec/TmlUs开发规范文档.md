@@ -168,6 +168,9 @@ Adapter 用于隔离外部差异，不应泄漏到核心用例中。
 
 Skill Catalog 额外规则：
 
+- 官方 Skill 目录应维护在仓库 `data/skills/catalog.json` 中。新增或调整默认展示的官方 Skill 时，优先更新该远程数据文件，而不是只修改 CLI 源码中的内置目录。
+- CLI 源码中的内置 Skill Catalog 只作为离线、网络失败或远程数据校验失败时的 fallback；它应保持可用，但不再是团队新增官方 Skill 的唯一入口。
+- 官方 Skill 目录必须进行结构校验后才能用于安装流程。校验内容至少包括 schema version、Skill ID、来源、分类、简介、安装策略和目标 AI IDE 元数据。
 - 不得把本地开发目录中的临时 skill 作为默认公开资源，除非它已经被明确纳入团队维护的远程资源库。
 - 每个 Skill 必须声明稳定 `id`、展示名、来源、分类、简介、支持的 AI IDE 目标和安装策略。
 - Skill 来源优先使用远程仓库地址。对不同仓库结构必须通过 installer strategy 或 adapter 适配，禁止在安装流程中硬编码特殊仓库。
@@ -178,7 +181,7 @@ Skill Catalog 额外规则：
 - GitHub 远程下载适配器必须支持 `GITHUB_TOKEN` 或 `GH_TOKEN`，并在 403 时展示 GitHub 返回的错误原因、rate limit reset 时间和 token 修复建议。
 - GitHub 下载不得只依赖 `api.github.com/repos/.../contents`。当 Contents API 限流或失败时，应 fallback 到 `codeload.github.com` 的 zip archive，再从解压目录复制需要的文件或子目录。
 - archive fallback 必须跨平台处理路径与跨盘符复制；不能依赖 `rename` 跨文件系统移动目录，应使用 copy 后清理临时目录。
-- 远程 Skill 搜索来源必须配置化。搜索阶段只负责发现远程 skill 目录并生成临时资源定义，后续安装必须复用统一 Skill 安装流程和目标 AI IDE 适配器，禁止为搜索结果另写一套安装逻辑。
+- 远程 Skill 搜索来源必须配置化，来源注册表应维护在 `data/skills/search-sources.json`。默认搜索源为 TmlUs 官方目录，TML-Skills 等外部仓库作为可选搜索源。搜索阶段只负责发现远程 skill 并生成资源定义，后续安装必须复用统一 Skill 安装流程和目标 AI IDE 适配器，禁止为搜索结果另写一套安装逻辑。
 - 对大型 bundle 资源，常规测试不应每次全量下载；应至少测试安装策略解析、小型远程目录下载和一个代表性 bundle。
 
 Recipe 表达一组团队认可的初始化组合，例如某类项目需要哪些文档目录、哪些 AI IDE 能力、哪些外部工具和哪些 OpenSpec 配置。Use Case 执行 Recipe，Catalog 描述资源，Adapter 处理差异。

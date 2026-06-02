@@ -1,24 +1,17 @@
 import { COMMON_SKILL_TARGETS } from '../catalog/skills.js';
+import {
+  BUNDLED_SKILL_SEARCH_SOURCE_REGISTRY,
+  loadSkillCatalog,
+  loadSkillSearchSourceRegistry,
+  type SkillSearchSource,
+  type SkillSearchSourceRegistry
+} from '../catalog/skill-catalog.js';
 import type { SkillDefinition } from '../core/types.js';
 import { listGitHubDirectories } from '../adapters/tools/github-skill-source.js';
 
 export const SKILL_SEARCH_SENTINEL = '__search__';
 
-interface SkillSearchSource {
-  id: string;
-  displayName: string;
-  source: string;
-  category: string;
-}
-
-export const SKILL_SEARCH_SOURCES: SkillSearchSource[] = [
-  {
-    id: 'tml-team',
-    displayName: 'TML Team',
-    source: 'github:Time-Machine-Lab/TML-Skills/skills',
-    category: 'TML Team'
-  }
-];
+export const SKILL_SEARCH_SOURCES: SkillSearchSource[] = BUNDLED_SKILL_SEARCH_SOURCE_REGISTRY.sources;
 
 export function isSkillSearchRequest(values: string[]): boolean {
   return values.some((value) => {
@@ -27,16 +20,21 @@ export function isSkillSearchRequest(values: string[]): boolean {
   });
 }
 
-export function resolveSkillSearchSources(ids: string[]): { sources: SkillSearchSource[]; unknown: string[] } {
-  const requested = ids.length ? ids : ['tml-team'];
+export function resolveSkillSearchSources(
+  ids: string[],
+  registry: SkillSearchSourceRegistry = BUNDLED_SKILL_SEARCH_SOURCE_REGISTRY
+): { sources: SkillSearchSource[]; unknown: string[] } {
+  const requested = ids.length ? ids : [registry.defaultSourceId];
   const sources: SkillSearchSource[] = [];
   const unknown: string[] = [];
   const seen = new Set<string>();
 
   for (const id of requested) {
     const normalized = id.trim().toLowerCase();
-    const source = SKILL_SEARCH_SOURCES.find((candidate) => {
-      return candidate.id === normalized || candidate.displayName.toLowerCase() === normalized;
+    const source = registry.sources.find((candidate) => {
+      return candidate.id === normalized
+        || candidate.displayName.toLowerCase() === normalized
+        || candidate.aliases?.includes(normalized);
     });
 
     if (!source) {
@@ -54,10 +52,20 @@ export function resolveSkillSearchSources(ids: string[]): { sources: SkillSearch
 }
 
 export async function searchRemoteSkills(sourceIds: string[]): Promise<{ skills: SkillDefinition[]; unknown: string[] }> {
-  const resolved = resolveSkillSearchSources(sourceIds);
+  const registry = await loadSkillSearchSourceRegistry();
+  const resolved = resolveSkillSearchSources(sourceIds, registry);
   const skills: SkillDefinition[] = [];
 
   for (const source of resolved.sources) {
+    if (source.type === 'catalog') {
+      skills.push(...await loadSkillCatalog());
+      continue;
+    }
+
+    if (!source.source) {
+      continue;
+    }
+
     const directories = await listGitHubDirectories(source.source) ?? [];
     for (const directory of directories) {
       skills.push({
@@ -82,4 +90,16 @@ export function unknownSkillSearchSourceMessage(unknown: string[]): string {
     `Unknown Skill search source: ${unknown.join(', ')}`,
     `Supported sources: ${SKILL_SEARCH_SOURCES.map((source) => source.displayName).join(', ')}`
   ].join('\n');
+}
+
+export async function unknownSkillSearchSourceMessageFromRegistry(unknown: string[]): Promise<string> {
+  const registry = await loadSkillSearchSourceRegistry();
+  return [
+    `Unknown Skill search source: ${unknown.join(', ')}`,
+    `Supported sources: ${registry.sources.map((source) => source.displayName).join(', ')}`
+  ].join('\n');
+}
+
+export async function defaultSkillSearchSources(): Promise<SkillSearchSource[]> {
+  return (await loadSkillSearchSourceRegistry()).sources;
 }

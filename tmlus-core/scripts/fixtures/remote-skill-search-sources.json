@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "updatedAt": "2026-06-02T00:00:00.000Z",
+  "defaultSourceId": "tmlus",
+  "sources": [
+    {
+      "id": "tmlus",
+      "displayName": "TmlUs Official",
+      "type": "catalog",
+      "category": "TmlUs"
+    },
+    {
+      "id": "tml-skills",
+      "aliases": [
+        "tml-team"
+      ],
+      "displayName": "TML Skills",
+      "type": "github-directory",
+      "source": "github:Time-Machine-Lab/TML-Skills/skills",
+      "category": "TML Team"
+    }
+  ]
+}

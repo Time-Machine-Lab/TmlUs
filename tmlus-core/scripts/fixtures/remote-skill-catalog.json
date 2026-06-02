@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "updatedAt": "2026-06-02T00:00:00.000Z",
+  "skills": [
+    {
+      "id": "fixture-skill",
+      "name": "Fixture Skill",
+      "source": "github:Time-Machine-Lab/TML-Skills/skills/fixture-skill",
+      "category": "Fixture",
+      "description": "Fixture skill used by remote catalog tests.",
+      "installer": {
+        "strategy": "github-directory"
+      },
+      "targets": "common"
+    },
+    {
+      "id": "humanizer-zh",
+      "aliases": [
+        "humanizer"
+      ],
+      "name": "Humanizer-zh",
+      "source": "github:op7418/Humanizer-zh",
+      "category": "内容创作",
+      "description": "中文文本人性化编辑 Skill，用于减少 AI 写作痕迹、优化表达节奏和真实感。",
+      "installer": {
+        "strategy": "github-root-skill",
+        "includePaths": [
+          "SKILL.md",
+          "README.md",
+          "LICENSE"
+        ]
+      },
+      "targets": "common"
+    }
+  ]
+}

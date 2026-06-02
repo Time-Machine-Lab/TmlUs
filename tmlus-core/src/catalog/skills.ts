@@ -32,6 +32,23 @@ export const SKILL_CATALOG: SkillDefinition[] = [
     targets: COMMON_SKILL_TARGETS
   },
   {
+    id: 'humanizer-zh',
+    aliases: ['humanizer'],
+    name: 'Humanizer-zh',
+    source: 'github:op7418/Humanizer-zh',
+    category: '内容创作',
+    description: '中文文本人性化编辑 Skill，用于减少 AI 写作痕迹、优化表达节奏和真实感。',
+    installer: {
+      strategy: 'github-root-skill',
+      includePaths: [
+        'SKILL.md',
+        'README.md',
+        'LICENSE'
+      ]
+    },
+    targets: COMMON_SKILL_TARGETS
+  },
+  {
     id: 'frontend-slides',
     name: 'Frontend Slides',
     source: 'github:zarazhangrui/frontend-slides',

@@ -94,7 +94,7 @@ CLI Shell
   负责将团队标准配方展开为一组可执行动作。配方表达“要为这个项目装配哪些能力”，而不是把初始化流程写死在命令中。
 
 - **Resource Catalog**
-  负责管理 Skill、Command、Prompt、Tool、Profile 等资源元数据。资源目录应成为团队能力沉淀的入口，避免资源定义散落在流程代码中。
+  负责管理 Skill、Command、Prompt、Tool、Profile 等资源元数据。资源目录应成为团队能力沉淀的入口，避免资源定义散落在流程代码中。Skill 等可快速变化的官方目录可以来自 GitHub 上的静态数据文件，并由本地缓存和内置 fallback 保证离线可用性。
 
 - **Environment Adapters**
   负责适配用户 AI IDE 环境，包括 Codex、Claude、Cursor、Gemini、OpenCode、Trae 等。它们处理目标目录、文件命名、格式差异和环境识别。

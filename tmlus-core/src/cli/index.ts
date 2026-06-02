@@ -16,17 +16,18 @@ import {
 } from '../app/tool-install.js';
 import {
   defaultSkillTargets,
-  defaultSkills,
   installSkills,
+  loadDefaultSkills,
   resolveSkillIds,
   resolveSkillTargetEnvironments,
   unknownSkillMessage
 } from '../app/skill-install.js';
 import {
+  defaultSkillSearchSources,
   isSkillSearchRequest,
   searchRemoteSkills,
   SKILL_SEARCH_SENTINEL,
-  unknownSkillSearchSourceMessage
+  unknownSkillSearchSourceMessageFromRegistry
 } from '../app/skill-search.js';
 import { renderHelp } from './command-registry.js';
 import { renderStartupBanner } from './banner.js';
@@ -231,12 +232,14 @@ async function runSkills(): Promise<void> {
   let skillIds = positionalValuesForCommand('skills');
   const explicitIdeNames = splitValues(valueAfter('--ide'));
   const explicitSearchSourceNames = splitValues(valueAfter('--search'));
-  let activeSkillPool = defaultSkills();
+  const catalog = await loadDefaultSkills();
+  let activeSkillPool = catalog;
+  let remoteSkillTitle = 'Remote Skills';
 
   async function selectSearchedSkills(sourceNames: string[]): Promise<boolean> {
     let requestedSourceNames = sourceNames;
     if (!requestedSourceNames.length && process.stdout.isTTY && process.stdin.isTTY) {
-      const selectedSources = await selectSearchSourceIds();
+      const selectedSources = await selectSearchSourceIds(await defaultSkillSearchSources());
       if (selectedSources === SELECTION_CANCELLED) {
         return false;
       }
@@ -246,7 +249,7 @@ async function runSkills(): Promise<void> {
 
     const remote = await searchRemoteSkills(requestedSourceNames);
     if (remote.unknown.length) {
-      console.error(unknownSkillSearchSourceMessage(remote.unknown));
+      console.error(await unknownSkillSearchSourceMessageFromRegistry(remote.unknown));
       process.exitCode = 1;
       return false;
     }
@@ -257,17 +260,20 @@ async function runSkills(): Promise<void> {
     }
 
     activeSkillPool = remote.skills;
+    remoteSkillTitle = requestedSourceNames.length
+      ? `Remote Skills (${requestedSourceNames.join(', ')})`
+      : 'Remote Skills';
     if (skillIds.length) {
       return true;
     }
 
-    const selectedRemote = await selectRemoteSkillIds(remote.skills);
+    const selectedRemote = await selectRemoteSkillIds(remote.skills, remoteSkillTitle);
     if (selectedRemote === SELECTION_CANCELLED) {
       return false;
     }
 
     if (selectedRemote === undefined) {
-      renderSkillNameList('TML Team Skills', remote.skills, { quiet });
+      renderSkillNameList(remoteSkillTitle, remote.skills, { quiet });
       return false;
     }
 
@@ -282,10 +288,12 @@ async function runSkills(): Promise<void> {
         const normalized = id.trim().toLowerCase();
         return normalized !== 'search' && normalized !== SKILL_SEARCH_SENTINEL;
       });
-    skillIds = skillIds.filter((id) => {
-      const normalized = id.trim().toLowerCase();
-      return normalized !== 'search' && normalized !== SKILL_SEARCH_SENTINEL;
-    });
+    skillIds = explicitSearchSourceNames.length
+      ? skillIds.filter((id) => {
+        const normalized = id.trim().toLowerCase();
+        return normalized !== 'search' && normalized !== SKILL_SEARCH_SENTINEL;
+      })
+      : [];
 
     if (!await selectSearchedSkills(requestedSourceNames)) {
       return;
@@ -293,14 +301,14 @@ async function runSkills(): Promise<void> {
   }
 
   if (!skillIds.length) {
-    const selected = await selectSkillIds(defaultSkills());
+    const selected = await selectSkillIds(catalog);
     if (selected === SELECTION_CANCELLED) {
       return;
     }
 
     if (selected === undefined) {
-      renderSkillCatalogPage();
-      renderSkillSelectionHint(defaultSkills());
+      renderSkillCatalogPage(catalog);
+      renderSkillSelectionHint(catalog);
       return;
     }
 
@@ -318,15 +326,9 @@ async function runSkills(): Promise<void> {
     }
   }
 
-  const usingDefaultCatalog = activeSkillPool === defaultSkills();
-  const resolvedSkills = usingDefaultCatalog
-    ? resolveSkillIds(skillIds)
-    : {
-      skills: activeSkillPool.filter((skill) => skillIds.includes(skill.id)),
-      unknown: skillIds.filter((id) => !activeSkillPool.some((skill) => skill.id === id))
-    };
+  const resolvedSkills = resolveSkillIds(skillIds, activeSkillPool);
   if (resolvedSkills.unknown.length) {
-    console.error(unknownSkillMessage(resolvedSkills.unknown));
+    console.error(unknownSkillMessage(resolvedSkills.unknown, activeSkillPool));
     process.exitCode = 1;
     return;
   }

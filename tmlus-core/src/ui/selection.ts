@@ -1,6 +1,7 @@
 import * as readline from 'node:readline';
 import { stdin, stdout } from 'node:process';
 import type { EnvironmentStatus, SkillDefinition, ToolDefinition, WorkModeDefinition } from '../core/types.js';
+import type { SkillSearchSource } from '../catalog/skill-catalog.js';
 import { canPrompt } from './prompt.js';
 
 interface SelectItem {
@@ -855,8 +856,8 @@ export async function selectSkillIds(skills: SkillDefinition[], pageSize = 12): 
       ...skills.map(skillToTableItem),
       {
         id: '__search__',
-        cells: ['Search', 'TML Team', '搜索 TML Team Skill 仓库'],
-        detail: '从 TML Team 维护的远程 Skill 仓库发现更多技能，只展示名称，选中后复用当前安装流程。',
+        cells: ['Search', 'Remote', '搜索远程 Skill 来源'],
+        detail: '从已配置的远程 Skill 来源发现更多技能，选中后复用当前安装流程。',
         action: true
       }
     ],
@@ -885,24 +886,24 @@ export async function selectInitSkillIds(skills: SkillDefinition[], pageSize = 1
   });
 }
 
-export async function selectSearchSourceIds(): Promise<SelectionResult> {
+export async function selectSearchSourceIds(sources: SkillSearchSource[]): Promise<SelectionResult> {
   return multiSelect({
     title: 'Search Source',
-    items: [
-      {
-        id: 'tml-team',
-        label: 'TML Team',
-        tone: 'skill',
-        detail: 'Time-Machine-Lab/TML-Skills'
-      }
-    ],
+    items: sources.map((source) => ({
+      id: source.id,
+      label: source.displayName,
+      tone: 'skill',
+      detail: source.type === 'catalog'
+        ? 'Official catalog'
+        : source.source ?? source.category
+    })),
     pageSize: 6
   });
 }
 
-export async function selectRemoteSkillIds(skills: SkillDefinition[], pageSize = 12): Promise<SelectionResult> {
+export async function selectRemoteSkillIds(skills: SkillDefinition[], title = 'Remote Skills', pageSize = 12): Promise<SelectionResult> {
   return multiSelectTable({
-    title: 'TML Team Skills',
+    title,
     columns: [
       { title: 'Name', width: 34 }
     ],
