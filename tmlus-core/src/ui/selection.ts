@@ -893,7 +893,7 @@ export async function selectSearchSourceIds(sources: SkillSearchSource[]): Promi
       id: source.id,
       label: source.displayName,
       tone: 'skill',
-      detail: source.source ?? source.category
+      detail: source.description ?? source.source ?? source.category
     })),
     pageSize: 6
   });
@@ -903,12 +903,14 @@ export async function selectRemoteSkillIds(skills: SkillDefinition[], title = 'R
   return multiSelectTable({
     title,
     columns: [
-      { title: 'Name', width: 34 }
+      { title: 'Name', width: 24 },
+      { title: 'Category', width: 14 },
+      { title: 'Description', width: 50 }
     ],
     items: skills.map((skill) => ({
       id: skill.id,
-      cells: [skill.name],
-      detail: skill.id
+      cells: [skill.name, skill.category, skill.description],
+      detail: skill.description
     })),
     pageSize
   });

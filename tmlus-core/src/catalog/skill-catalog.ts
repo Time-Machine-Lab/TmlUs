@@ -45,6 +45,15 @@ export interface RemoteSkillDefinition {
 }
 
 export type SkillSearchSourceType = 'github-directory';
+export type SkillSearchDiscoveryStrategy = 'directory' | 'skill-manifest';
+
+export interface SkillSearchDiscoveryOptions {
+  strategy: SkillSearchDiscoveryStrategy;
+  maxDepth?: number;
+  includeCategories?: string[];
+  excludeCategories?: string[];
+  concurrency?: number;
+}
 
 export interface SkillSearchSource {
   id: string;
@@ -53,6 +62,8 @@ export interface SkillSearchSource {
   type: SkillSearchSourceType;
   source?: string;
   category: string;
+  description?: string;
+  discovery?: SkillSearchDiscoveryOptions;
 }
 
 export interface RemoteSkillSearchSourcesDocument {
@@ -86,7 +97,24 @@ export const BUNDLED_SKILL_SEARCH_SOURCE_REGISTRY: SkillSearchSourceRegistry = {
       displayName: 'TML Skills',
       type: 'github-directory',
       source: 'github:Time-Machine-Lab/TML-Skills/skills',
-      category: 'TML Team'
+      category: 'TML Team',
+      description: 'TML 团队维护的 Skill 来源，提供文档规范、内容处理、前端交付、工具适配等团队认可的 AI 能力。'
+    },
+    {
+      id: 'mattpocock-skills',
+      aliases: ['mattpocock', 'real-engineering', 'skills-for-real-engineers'],
+      displayName: 'Matt Pocock Skills',
+      type: 'github-directory',
+      source: 'github:mattpocock/skills/skills',
+      category: 'Real Engineering',
+      description: '面向真实软件工程的 AI Coding 工作流来源，帮助解决需求未对齐、Agent 过度啰嗦、缺少反馈环、调试不系统、TDD 落地、PRD/Issue 拆分、架构治理、原型验证和会话交接等问题。',
+      discovery: {
+        strategy: 'skill-manifest',
+        maxDepth: 2,
+        includeCategories: ['engineering', 'productivity', 'misc'],
+        excludeCategories: ['deprecated', 'personal', 'in-progress'],
+        concurrency: 8
+      }
     }
   ]
 };
@@ -160,6 +188,32 @@ function optionalStringArray(value: Record<string, unknown>, field: string, labe
   }
 
   return raw.map((item) => item.trim());
+}
+
+function optionalString(value: Record<string, unknown>, field: string, label: string): string | undefined {
+  const raw = value[field];
+  if (raw === undefined) {
+    return undefined;
+  }
+
+  if (typeof raw !== 'string' || !raw.trim()) {
+    throw new Error(`${label}.${field} must be a non-empty string.`);
+  }
+
+  return raw.trim();
+}
+
+function optionalPositiveInteger(value: Record<string, unknown>, field: string, label: string): number | undefined {
+  const raw = value[field];
+  if (raw === undefined) {
+    return undefined;
+  }
+
+  if (typeof raw !== 'number' || !Number.isInteger(raw) || raw <= 0) {
+    throw new Error(`${label}.${field} must be a positive integer.`);
+  }
+
+  return raw;
 }
 
 function validateSchemaVersion(value: Record<string, unknown>, label: string): void {
@@ -244,6 +298,30 @@ function normalizeSkill(value: unknown, index: number): SkillDefinition {
   };
 }
 
+function normalizeSearchDiscovery(value: unknown, label: string): SkillSearchDiscoveryOptions | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  assertObject(value, `${label}.discovery`);
+  const strategy = stringField(value, 'strategy', `${label}.discovery`) as SkillSearchDiscoveryStrategy;
+  if (strategy !== 'directory' && strategy !== 'skill-manifest') {
+    throw new Error(`${label}.discovery.strategy is unsupported.`);
+  }
+  const maxDepth = optionalPositiveInteger(value, 'maxDepth', `${label}.discovery`);
+  const includeCategories = optionalStringArray(value, 'includeCategories', `${label}.discovery`);
+  const excludeCategories = optionalStringArray(value, 'excludeCategories', `${label}.discovery`);
+  const concurrency = optionalPositiveInteger(value, 'concurrency', `${label}.discovery`);
+
+  return {
+    strategy,
+    ...(maxDepth ? { maxDepth } : {}),
+    ...(includeCategories ? { includeCategories } : {}),
+    ...(excludeCategories ? { excludeCategories } : {}),
+    ...(concurrency ? { concurrency } : {})
+  };
+}
+
 export function normalizeSkillCatalogDocument(value: unknown): SkillDefinition[] {
   assertObject(value, 'catalog');
   validateSchemaVersion(value, 'catalog');
@@ -280,13 +358,18 @@ function normalizeSearchSource(value: unknown, index: number): SkillSearchSource
     throw new Error(`${label}.source is required for github-directory sources.`);
   }
 
+  const description = optionalString(value, 'description', label);
+  const discovery = normalizeSearchDiscovery(value.discovery, label);
+
   return {
     id,
     aliases: optionalStringArray(value, 'aliases', label)?.map((alias) => alias.toLowerCase()),
     displayName: stringField(value, 'displayName', label),
     type,
     ...(source ? { source } : {}),
-    category: stringField(value, 'category', label)
+    category: stringField(value, 'category', label),
+    ...(description ? { description } : {}),
+    ...(discovery ? { discovery } : {})
   };
 }
 

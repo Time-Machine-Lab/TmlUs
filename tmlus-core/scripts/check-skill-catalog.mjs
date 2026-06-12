@@ -5,8 +5,12 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
   loadSkillCatalog,
-  loadSkillSearchSourceRegistry
+  loadSkillSearchSourceRegistry,
+  normalizeSkillSearchSourcesDocument
 } from '../dist/catalog/skill-catalog.js';
+import {
+  parseSkillFrontmatter
+} from '../dist/adapters/tools/github-skill-source.js';
 import {
   resolveSkillIds
 } from '../dist/app/skill-install.js';
@@ -96,6 +100,60 @@ await withTempCache(async (cacheDir) => {
 
   const aliasResolved = resolveSkillSearchSources(['tml-team'], registry);
   assert.deepEqual(aliasResolved.sources.map((source) => source.id), ['tml-skills']);
+
+  const tmlSource = registry.sources.find((source) => source.id === 'tml-skills');
+  assert.equal(typeof tmlSource.description, 'string');
+  assert.equal(tmlSource.description.includes('TML'), true);
+
+  const mattSource = registry.sources.find((source) => source.id === 'mattpocock-skills');
+  assert.equal(mattSource.displayName, 'Matt Pocock Skills');
+  assert.equal(mattSource.description.includes('需求未对齐'), true);
+  assert.equal(mattSource.discovery.strategy, 'skill-manifest');
+  assert.equal(mattSource.discovery.maxDepth, 2);
+  assert.deepEqual(mattSource.discovery.includeCategories, ['engineering', 'productivity', 'misc']);
+  assert.equal(mattSource.discovery.excludeCategories.includes('deprecated'), true);
+  assert.equal(mattSource.discovery.excludeCategories.includes('personal'), true);
+  assert.equal(mattSource.discovery.excludeCategories.includes('in-progress'), true);
+
+  const mattAliasResolved = resolveSkillSearchSources(['mattpocock'], registry);
+  assert.deepEqual(mattAliasResolved.sources.map((source) => source.id), ['mattpocock-skills']);
 });
+
+{
+  const legacyRegistry = normalizeSkillSearchSourcesDocument({
+    version: 1,
+    defaultSourceId: 'legacy',
+    sources: [
+      {
+        id: 'legacy',
+        displayName: 'Legacy',
+        type: 'github-directory',
+        source: 'github:example/legacy/skills',
+        category: 'Legacy'
+      }
+    ]
+  });
+  assert.equal(legacyRegistry.sources[0].description, undefined);
+  assert.equal(legacyRegistry.sources[0].discovery, undefined);
+}
+
+{
+  const parsed = parseSkillFrontmatter(`---
+name: example-skill
+description: >
+  Solve one problem.
+  Keep details readable.
+---
+
+# Example
+`);
+  assert.deepEqual(parsed, {
+    name: 'example-skill',
+    description: 'Solve one problem. Keep details readable.'
+  });
+
+  const fallback = parseSkillFrontmatter('# No frontmatter');
+  assert.deepEqual(fallback, {});
+}
 
 console.log('skill catalog checks passed');

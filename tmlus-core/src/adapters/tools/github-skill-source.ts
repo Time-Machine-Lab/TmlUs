@@ -16,9 +16,44 @@ interface GitHubSource {
   ref?: string;
 }
 
+interface GitHubTreeItem {
+  path: string;
+  type: 'blob' | 'tree';
+}
+
+interface GitHubTreeResponse {
+  tree: GitHubTreeItem[];
+  truncated?: boolean;
+}
+
 interface GitHubErrorBody {
   message?: string;
   documentation_url?: string;
+}
+
+export interface GitHubSkillManifestDiscoveryOptions {
+  maxDepth?: number;
+  includeCategories?: string[];
+  excludeCategories?: string[];
+  concurrency?: number;
+}
+
+export interface GitHubSkillManifest {
+  id: string;
+  source: string;
+  directory: string;
+  manifestPath: string;
+  category?: string;
+  name?: string;
+  description?: string;
+}
+
+interface GitHubSkillManifestPath {
+  id: string;
+  source: string;
+  directory: string;
+  manifestPath: string;
+  category?: string;
 }
 
 export function parseGitHubSource(source: string): GitHubSource | undefined {
@@ -123,6 +158,247 @@ async function downloadFile(url: string, destinationPath: string): Promise<void>
 
 function branchCandidates(source: GitHubSource): string[] {
   return [...new Set([source.ref, 'main', 'master'].filter(Boolean) as string[])];
+}
+
+function formatGitHubSource(source: GitHubSource, directory: string): string {
+  const repo = source.ref ? `${source.repo}#${source.ref}` : source.repo;
+  return `github:${source.owner}/${repo}${directory ? `/${directory}` : ''}`;
+}
+
+function normalizeGitHubPath(value: string): string {
+  return value.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+}
+
+function isUnderDirectory(filePath: string, directory: string): boolean {
+  if (!directory) {
+    return true;
+  }
+
+  return filePath === directory || filePath.startsWith(`${directory}/`);
+}
+
+function categoryAllowed(category: string | undefined, options: GitHubSkillManifestDiscoveryOptions): boolean {
+  const normalized = category?.toLowerCase();
+  const include = options.includeCategories?.map((item) => item.toLowerCase());
+  const exclude = options.excludeCategories?.map((item) => item.toLowerCase());
+
+  if (include?.length && (!normalized || !include.includes(normalized))) {
+    return false;
+  }
+
+  if (normalized && exclude?.includes(normalized)) {
+    return false;
+  }
+
+  return true;
+}
+
+function manifestPathsFromRepoPaths(
+  source: GitHubSource,
+  paths: string[],
+  options: GitHubSkillManifestDiscoveryOptions
+): GitHubSkillManifestPath[] {
+  const sourceDirectory = normalizeGitHubPath(source.directory);
+  const manifests: GitHubSkillManifestPath[] = [];
+
+  for (const rawPath of paths) {
+    const manifestPath = normalizeGitHubPath(rawPath);
+    if (!manifestPath.endsWith('/SKILL.md') && manifestPath !== 'SKILL.md') {
+      continue;
+    }
+
+    if (!isUnderDirectory(manifestPath, sourceDirectory)) {
+      continue;
+    }
+
+    const relativePath = sourceDirectory
+      ? manifestPath.slice(sourceDirectory.length + 1)
+      : manifestPath;
+    const parts = relativePath.split('/').filter(Boolean);
+    if (parts.at(-1) !== 'SKILL.md' || parts.length < 2) {
+      continue;
+    }
+
+    const directoryParts = parts.slice(0, -1);
+    if (options.maxDepth && directoryParts.length > options.maxDepth) {
+      continue;
+    }
+
+    const category = directoryParts.length > 1 ? directoryParts[0] : undefined;
+    if (!categoryAllowed(category, options)) {
+      continue;
+    }
+
+    const directory = sourceDirectory
+      ? `${sourceDirectory}/${directoryParts.join('/')}`
+      : directoryParts.join('/');
+
+    manifests.push({
+      id: directoryParts.at(-1) ?? directory,
+      source: formatGitHubSource(source, directory),
+      directory,
+      manifestPath,
+      ...(category ? { category } : {})
+    });
+  }
+
+  return manifests.sort((left, right) => left.directory.localeCompare(right.directory));
+}
+
+async function getRecursiveTree(source: GitHubSource): Promise<{ branch: string; paths: string[] }> {
+  const errors: string[] = [];
+
+  for (const branch of branchCandidates(source)) {
+    const url = `https://api.github.com/repos/${source.owner}/${source.repo}/git/trees/${branch}?recursive=1`;
+    try {
+      const tree = await getJson<GitHubTreeResponse>(url);
+      if (tree.truncated) {
+        throw new Error('GitHub tree response was truncated.');
+      }
+
+      return {
+        branch,
+        paths: tree.tree
+          .filter((item) => item.type === 'blob')
+          .map((item) => item.path)
+      };
+    } catch (error) {
+      errors.push(`${branch}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  throw new Error(`GitHub recursive tree failed for ${source.owner}/${source.repo} (${errors.join(', ')})`);
+}
+
+async function collectManifestPaths(directoryPath: string, repoRelativeDirectory: string): Promise<string[]> {
+  const entries = await readdir(directoryPath, { withFileTypes: true });
+  const paths: string[] = [];
+
+  for (const entry of entries) {
+    const localPath = path.join(directoryPath, entry.name);
+    const repoPath = repoRelativeDirectory
+      ? `${repoRelativeDirectory}/${entry.name}`
+      : entry.name;
+
+    if (entry.isDirectory()) {
+      paths.push(...await collectManifestPaths(localPath, repoPath));
+      continue;
+    }
+
+    if (entry.isFile() && entry.name === 'SKILL.md') {
+      paths.push(repoPath);
+    }
+  }
+
+  return paths;
+}
+
+async function listGitHubSkillManifestPathsFromArchive(
+  source: GitHubSource,
+  options: GitHubSkillManifestDiscoveryOptions
+): Promise<GitHubSkillManifestPath[]> {
+  return withArchive(source, async (extractedRoot) => {
+    const sourceDirectory = normalizeGitHubPath(source.directory);
+    const directoryPath = sourceDirectory
+      ? path.join(extractedRoot, ...sourceDirectory.split('/'))
+      : extractedRoot;
+    const paths = await collectManifestPaths(directoryPath, sourceDirectory);
+    return manifestPathsFromRepoPaths(source, paths, options);
+  });
+}
+
+async function listGitHubSkillManifestPaths(
+  source: GitHubSource,
+  options: GitHubSkillManifestDiscoveryOptions
+): Promise<{ branch?: string; manifests: GitHubSkillManifestPath[] }> {
+  try {
+    const tree = await getRecursiveTree(source);
+    return {
+      branch: tree.branch,
+      manifests: manifestPathsFromRepoPaths(source, tree.paths, options)
+    };
+  } catch {
+    return {
+      manifests: await listGitHubSkillManifestPathsFromArchive(source, options)
+    };
+  }
+}
+
+async function fetchRawGitHubFile(source: GitHubSource, filePath: string, branch?: string): Promise<string> {
+  const branches = branch ? [branch] : branchCandidates(source);
+  const encodedPath = filePath.split('/').map(encodeURIComponent).join('/');
+  const errors: string[] = [];
+
+  for (const candidate of branches) {
+    const url = `https://raw.githubusercontent.com/${source.owner}/${source.repo}/${candidate}/${encodedPath}`;
+    const response = await fetch(url, {
+      headers: githubHeaders()
+    });
+
+    if (response.ok) {
+      return response.text();
+    }
+
+    errors.push(`${candidate}: ${response.status}`);
+  }
+
+  throw new Error(`GitHub raw file request failed for ${filePath} (${errors.join(', ')})`);
+}
+
+export function parseSkillFrontmatter(raw: string): { name?: string; description?: string } {
+  const match = raw.match(/^---\s*\r?\n([\s\S]*?)\r?\n---/);
+  if (!match) {
+    return {};
+  }
+
+  const lines = match[1].split(/\r?\n/);
+  const fields: Record<string, string> = {};
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const keyValue = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    if (!keyValue) {
+      continue;
+    }
+
+    const key = keyValue[1];
+    let value = keyValue[2].trim();
+    if (value === '>' || value === '|') {
+      const parts: string[] = [];
+      while (index + 1 < lines.length && /^\s+/.test(lines[index + 1])) {
+        index += 1;
+        parts.push(lines[index].trim());
+      }
+      value = parts.join(' ').replace(/\s+/g, ' ').trim();
+    }
+
+    fields[key] = value.replace(/^['"]|['"]$/g, '').trim();
+  }
+
+  return {
+    ...(fields.name ? { name: fields.name } : {}),
+    ...(fields.description ? { description: fields.description } : {})
+  };
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  callback: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.max(1, Math.min(concurrency, items.length));
+
+  await Promise.all(Array.from({ length: workerCount }, async () => {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await callback(items[currentIndex]);
+    }
+  }));
+
+  return results;
 }
 
 async function downloadArchive(source: GitHubSource, destinationFile: string): Promise<string> {
@@ -424,4 +700,28 @@ export async function listGitHubDirectories(source: string): Promise<string[] | 
   } catch {
     return listGitHubDirectoriesFromArchive(parsed);
   }
+}
+
+export async function listGitHubSkillManifests(
+  source: string,
+  options: GitHubSkillManifestDiscoveryOptions = {}
+): Promise<GitHubSkillManifest[] | undefined> {
+  const parsed = parseGitHubSource(source);
+  if (!parsed) {
+    return undefined;
+  }
+
+  const { branch, manifests } = await listGitHubSkillManifestPaths(parsed, options);
+  const concurrency = options.concurrency ?? 8;
+  return mapWithConcurrency(manifests, concurrency, async (manifest) => {
+    try {
+      const raw = await fetchRawGitHubFile(parsed, manifest.manifestPath, branch);
+      return {
+        ...manifest,
+        ...parseSkillFrontmatter(raw)
+      };
+    } catch {
+      return manifest;
+    }
+  });
 }

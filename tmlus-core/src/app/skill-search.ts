@@ -1,3 +1,6 @@
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { COMMON_SKILL_TARGETS } from '../catalog/skills.js';
 import {
   BUNDLED_SKILL_SEARCH_SOURCE_REGISTRY,
@@ -6,11 +9,18 @@ import {
   type SkillSearchSourceRegistry
 } from '../catalog/skill-catalog.js';
 import type { SkillDefinition } from '../core/types.js';
-import { listGitHubDirectories } from '../adapters/tools/github-skill-source.js';
+import { listGitHubDirectories, listGitHubSkillManifests } from '../adapters/tools/github-skill-source.js';
 
 export const SKILL_SEARCH_SENTINEL = '__search__';
+const DEFAULT_SEARCH_CACHE_TTL_HOURS = 4;
 
 export const SKILL_SEARCH_SOURCES: SkillSearchSource[] = BUNDLED_SKILL_SEARCH_SOURCE_REGISTRY.sources;
+
+interface SearchCacheEnvelope {
+  cachedAt: string;
+  cacheKey: string;
+  skills: SkillDefinition[];
+}
 
 export function isSkillSearchRequest(values: string[]): boolean {
   return values.some((value) => {
@@ -50,33 +60,189 @@ export function resolveSkillSearchSources(
   return { sources, unknown };
 }
 
-export async function searchRemoteSkills(sourceIds: string[]): Promise<{ skills: SkillDefinition[]; unknown: string[] }> {
+function envValue(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  return value ? value : undefined;
+}
+
+function searchCacheDirectory(): string {
+  const override = envValue('TMLUS_SKILL_CACHE_DIR');
+  if (override) {
+    return path.resolve(override);
+  }
+
+  const base = process.env.LOCALAPPDATA
+    ?? process.env.XDG_CACHE_HOME
+    ?? path.join(os.homedir(), '.cache');
+  return path.join(base, 'tmlus', 'cache');
+}
+
+function searchCacheTtlMilliseconds(): number {
+  const raw = envValue('TMLUS_SKILL_CATALOG_TTL_HOURS');
+  if (!raw) {
+    return DEFAULT_SEARCH_CACHE_TTL_HOURS * 60 * 60 * 1000;
+  }
+
+  const hours = Number(raw);
+  if (!Number.isFinite(hours) || hours < 0) {
+    return DEFAULT_SEARCH_CACHE_TTL_HOURS * 60 * 60 * 1000;
+  }
+
+  return hours * 60 * 60 * 1000;
+}
+
+function cacheIsFresh(cachedAt: string): boolean {
+  const timestamp = Date.parse(cachedAt);
+  return Number.isFinite(timestamp) && Date.now() - timestamp <= searchCacheTtlMilliseconds();
+}
+
+function sourceCachePath(source: SkillSearchSource): string {
+  return path.join(searchCacheDirectory(), `skills-search-${source.id}.json`);
+}
+
+function sourceCacheKey(source: SkillSearchSource): string {
+  return JSON.stringify({
+    source: source.source,
+    discovery: source.discovery
+  });
+}
+
+function isSkillList(value: unknown): value is SkillDefinition[] {
+  return Array.isArray(value)
+    && value.every((skill) => {
+      return skill
+        && typeof skill === 'object'
+        && typeof (skill as SkillDefinition).id === 'string'
+        && typeof (skill as SkillDefinition).name === 'string'
+        && typeof (skill as SkillDefinition).source === 'string'
+        && typeof (skill as SkillDefinition).category === 'string'
+        && typeof (skill as SkillDefinition).description === 'string'
+        && Array.isArray((skill as SkillDefinition).targets);
+    });
+}
+
+async function readCachedSourceSkills(source: SkillSearchSource, freshOnly: boolean): Promise<SkillDefinition[] | undefined> {
+  try {
+    const raw = JSON.parse(await readFile(sourceCachePath(source), 'utf8')) as SearchCacheEnvelope;
+    if (!raw || typeof raw.cachedAt !== 'string' || raw.cacheKey !== sourceCacheKey(source) || !isSkillList(raw.skills)) {
+      return undefined;
+    }
+
+    if (freshOnly && !cacheIsFresh(raw.cachedAt)) {
+      return undefined;
+    }
+
+    return raw.skills;
+  } catch {
+    return undefined;
+  }
+}
+
+async function writeCachedSourceSkills(source: SkillSearchSource, skills: SkillDefinition[]): Promise<void> {
+  const cachePath = sourceCachePath(source);
+  await mkdir(path.dirname(cachePath), { recursive: true });
+  await writeFile(cachePath, JSON.stringify({
+    cachedAt: new Date().toISOString(),
+    cacheKey: sourceCacheKey(source),
+    skills
+  }, null, 2), 'utf8');
+}
+
+async function discoverDirectorySkills(source: SkillSearchSource): Promise<SkillDefinition[]> {
+  if (!source.source) {
+    return [];
+  }
+
+  const directories = await listGitHubDirectories(source.source) ?? [];
+  return directories.map((directory) => ({
+    id: directory,
+    name: directory,
+    source: `${source.source}/${directory}`,
+    category: source.category,
+    description: source.description ?? source.displayName,
+    installer: {
+      strategy: 'github-directory'
+    },
+    targets: COMMON_SKILL_TARGETS
+  }));
+}
+
+async function discoverManifestSkills(source: SkillSearchSource): Promise<SkillDefinition[]> {
+  if (!source.source) {
+    return [];
+  }
+
+  const cached = await readCachedSourceSkills(source, true);
+  if (cached) {
+    return cached;
+  }
+
+  const manifests = await listGitHubSkillManifests(source.source, {
+    maxDepth: source.discovery?.maxDepth,
+    includeCategories: source.discovery?.includeCategories,
+    excludeCategories: source.discovery?.excludeCategories,
+    concurrency: source.discovery?.concurrency
+  }) ?? [];
+  const skills = manifests.map((manifest) => ({
+    id: manifest.id,
+    name: manifest.name ?? manifest.id,
+    source: manifest.source,
+    category: manifest.category ?? source.category,
+    description: manifest.description ?? source.description ?? source.displayName,
+    installer: {
+      strategy: 'github-directory' as const
+    },
+    targets: COMMON_SKILL_TARGETS
+  }));
+  await writeCachedSourceSkills(source, skills);
+  return skills;
+}
+
+async function discoverSkillsForSource(source: SkillSearchSource): Promise<{ skills: SkillDefinition[]; failed: boolean }> {
+  if (source.discovery?.strategy !== 'skill-manifest') {
+    return {
+      skills: await discoverDirectorySkills(source),
+      failed: false
+    };
+  }
+
+  try {
+    return {
+      skills: await discoverManifestSkills(source),
+      failed: false
+    };
+  } catch {
+    const stale = await readCachedSourceSkills(source, false);
+    if (stale) {
+      return { skills: stale, failed: false };
+    }
+
+    return {
+      skills: await discoverDirectorySkills(source),
+      failed: true
+    };
+  }
+}
+
+export async function searchRemoteSkills(sourceIds: string[]): Promise<{ skills: SkillDefinition[]; unknown: string[]; failed: string[] }> {
   const registry = await loadSkillSearchSourceRegistry();
   const resolved = resolveSkillSearchSources(sourceIds, registry);
   const skills: SkillDefinition[] = [];
+  const failed: string[] = [];
 
   for (const source of resolved.sources) {
-    if (!source.source) {
-      continue;
-    }
-
-    const directories = await listGitHubDirectories(source.source) ?? [];
-    for (const directory of directories) {
-      skills.push({
-        id: directory,
-        name: directory,
-        source: `${source.source}/${directory}`,
-        category: source.category,
-        description: source.displayName,
-        installer: {
-          strategy: 'github-directory'
-        },
-        targets: COMMON_SKILL_TARGETS
-      });
+    try {
+      const discovered = await discoverSkillsForSource(source);
+      skills.push(...discovered.skills);
+      if (discovered.failed) {
+        failed.push(source.id);
+      }
+    } catch {
+      failed.push(source.id);
     }
   }
 
-  return { skills, unknown: resolved.unknown };
+  return { skills, unknown: resolved.unknown, failed };
 }
 
 export function unknownSkillSearchSourceMessage(unknown: string[]): string {

@@ -188,7 +188,7 @@ export function renderSkillNameList(title: string, skills: SkillDefinition[], op
   printSection(title, options);
 
   for (const skill of skills) {
-    printInfo(`${paint('│', color.violet, options)}  ${paint('◇', color.aqua, options)} ${skill.name}`, options);
+    printInfo(`${paint('│', color.violet, options)}  ${paint('◇', color.aqua, options)} ${pad(skill.name, 22)} ${pad(skill.category, 14)} ${skill.description}`, options);
   }
 }
 

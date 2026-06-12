@@ -281,6 +281,10 @@ async function runSkills(): Promise<void> {
       return false;
     }
 
+    if (remote.failed.length) {
+      printInfo(`Some remote Skill sources used fallback discovery or failed: ${remote.failed.join(', ')}`, { quiet });
+    }
+
     if (!remote.skills.length) {
       printInfo('No remote skills found.', { quiet });
       return false;
