@@ -63,6 +63,24 @@ export const COMMAND_REGISTRY: CommandMetadata[] = [
     ]
   },
   {
+    command: 'refresh',
+    name: {
+      zh: 'Refresh cache',
+      en: 'Refresh cache'
+    },
+    description: {
+      zh: 'Clear TmlUs-managed Skill catalog and remote Skill search caches without updating the CLI package.',
+      en: 'Clear TmlUs-managed Skill catalog and remote Skill search caches without updating the CLI package.'
+    },
+    examples: ['tmlus refresh', 'tmlus refresh --quiet'],
+    parameterNotes: [
+      {
+        zh: '`refresh` only clears local cache files. Use `tmlus update` to check and update the installed CLI package.',
+        en: '`refresh` only clears local cache files. Use `tmlus update` to check and update the installed CLI package.'
+      }
+    ]
+  },
+  {
     command: 'ide',
     valueHint: '[ideNames]',
     name: {

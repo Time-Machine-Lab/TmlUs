@@ -1,5 +1,4 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -13,6 +12,12 @@ import type {
   SkillInstallTarget,
   SkillInstallerDefinition
 } from '../core/types.js';
+import {
+  envValue,
+  SKILL_CATALOG_CACHE_FILE,
+  SKILL_SEARCH_SOURCES_CACHE_FILE,
+  skillCacheDirectory
+} from '../app/cache-paths.js';
 
 const DEFAULT_CATALOG_URL = 'https://raw.githubusercontent.com/Time-Machine-Lab/TmlUs/main/data/skills/catalog.json';
 const DEFAULT_SEARCH_SOURCES_URL = 'https://raw.githubusercontent.com/Time-Machine-Lab/TmlUs/main/data/skills/search-sources.json';
@@ -158,11 +163,6 @@ export const BUNDLED_SKILL_SEARCH_SOURCE_REGISTRY: SkillSearchSourceRegistry = {
   ]
 };
 
-function envValue(env: NodeJS.ProcessEnv, name: string): string | undefined {
-  const value = env[name]?.trim();
-  return value ? value : undefined;
-}
-
 function remoteDisabled(env: NodeJS.ProcessEnv): boolean {
   return ['1', 'true', 'yes'].includes((env.TMLUS_DISABLE_REMOTE_CATALOG ?? '').trim().toLowerCase());
 }
@@ -179,18 +179,6 @@ function ttlMilliseconds(env: NodeJS.ProcessEnv): number {
   }
 
   return hours * 60 * 60 * 1000;
-}
-
-function cacheDirectory(env: NodeJS.ProcessEnv): string {
-  const override = envValue(env, 'TMLUS_SKILL_CACHE_DIR');
-  if (override) {
-    return path.resolve(override);
-  }
-
-  const base = env.LOCALAPPDATA
-    ?? env.XDG_CACHE_HOME
-    ?? path.join(os.homedir(), '.cache');
-  return path.join(base, 'tmlus', 'cache');
 }
 
 function catalogUrl(env: NodeJS.ProcessEnv): string {
@@ -597,7 +585,7 @@ async function loadCachedRemote<T>(
 
   const now = options.now ?? new Date();
   const ttlMs = ttlMilliseconds(env);
-  const cachePath = path.join(cacheDirectory(env), cacheFileName);
+  const cachePath = path.join(skillCacheDirectory(env), cacheFileName);
   const cached = await readCache(cachePath, normalize);
   if (cached && cacheIsFresh(cached.cachedAt, now, ttlMs)) {
     return cached.data;
@@ -616,7 +604,7 @@ async function loadCachedRemote<T>(
 export async function loadSkillCatalog(options: CatalogLoaderOptions = {}): Promise<SkillDefinition[]> {
   return loadCachedRemote(
     options,
-    'skills-catalog.json',
+    SKILL_CATALOG_CACHE_FILE,
     catalogUrl(options.env ?? process.env),
     normalizeSkillCatalogDocument,
     SKILL_CATALOG
@@ -626,7 +614,7 @@ export async function loadSkillCatalog(options: CatalogLoaderOptions = {}): Prom
 export async function loadSkillSearchSourceRegistry(options: CatalogLoaderOptions = {}): Promise<SkillSearchSourceRegistry> {
   return loadCachedRemote(
     options,
-    'skills-search-sources.json',
+    SKILL_SEARCH_SOURCES_CACHE_FILE,
     searchSourcesUrl(options.env ?? process.env),
     normalizeSkillSearchSourcesDocument,
     BUNDLED_SKILL_SEARCH_SOURCE_REGISTRY

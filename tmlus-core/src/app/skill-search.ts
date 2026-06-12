@@ -1,5 +1,4 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { COMMON_SKILL_TARGETS } from '../catalog/skills.js';
 import {
@@ -10,6 +9,7 @@ import {
 } from '../catalog/skill-catalog.js';
 import type { SkillDefinition } from '../core/types.js';
 import { listGitHubDirectories, listGitHubSkillManifests } from '../adapters/tools/github-skill-source.js';
+import { envValue, skillSearchSourceCachePath } from './cache-paths.js';
 
 export const SKILL_SEARCH_SENTINEL = '__search__';
 const DEFAULT_SEARCH_CACHE_TTL_HOURS = 4;
@@ -60,25 +60,8 @@ export function resolveSkillSearchSources(
   return { sources, unknown };
 }
 
-function envValue(name: string): string | undefined {
-  const value = process.env[name]?.trim();
-  return value ? value : undefined;
-}
-
-function searchCacheDirectory(): string {
-  const override = envValue('TMLUS_SKILL_CACHE_DIR');
-  if (override) {
-    return path.resolve(override);
-  }
-
-  const base = process.env.LOCALAPPDATA
-    ?? process.env.XDG_CACHE_HOME
-    ?? path.join(os.homedir(), '.cache');
-  return path.join(base, 'tmlus', 'cache');
-}
-
 function searchCacheTtlMilliseconds(): number {
-  const raw = envValue('TMLUS_SKILL_CATALOG_TTL_HOURS');
+  const raw = envValue(process.env, 'TMLUS_SKILL_CATALOG_TTL_HOURS');
   if (!raw) {
     return DEFAULT_SEARCH_CACHE_TTL_HOURS * 60 * 60 * 1000;
   }
@@ -97,7 +80,7 @@ function cacheIsFresh(cachedAt: string): boolean {
 }
 
 function sourceCachePath(source: SkillSearchSource): string {
-  return path.join(searchCacheDirectory(), `skills-search-${source.id}.json`);
+  return skillSearchSourceCachePath(source.id);
 }
 
 function sourceCacheKey(source: SkillSearchSource): string {

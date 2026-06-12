@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { runInitFlow } from '../app/init-flow.js';
 import { getAllEnvironmentStatuses, initializeEnvironments, resolveEnvironmentNames, unknownIdeMessage } from '../app/ide-init.js';
 import { initializeTmlDocsStructure, tmlDocsStructureHasFailure } from '../app/tml-docs.js';
+import { runTmlusRefresh, tmlusRefreshHasFailure } from '../app/refresh-flow.js';
 import { runTmlusUpdate, tmlusUpdateHasFailure } from '../app/update-flow.js';
 import { initializeWorkMode, resolveWorkMode, unknownWorkModeMessage, WORK_MODES } from '../app/work-mode.js';
 import {
@@ -42,6 +43,7 @@ import {
   renderSkillNameList,
   renderSkillSelectionHint,
   renderTmlDocsStructureSummary,
+  renderTmlusRefreshSummary,
   renderTmlusUpdateSummary,
   renderToolCatalogPage,
   renderToolInstallProgress,
@@ -69,7 +71,7 @@ const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as { name:
 const args = process.argv.slice(2);
 const projectRoot = process.cwd();
 const quiet = isQuiet(args);
-const COMMAND_NAMES = new Set(['help', 'version', 'init', 'ide', 'tml-spec', 'work-mode', 'tools', 'skills', 'update']);
+const COMMAND_NAMES = new Set(['help', 'version', 'init', 'ide', 'tml-spec', 'work-mode', 'tools', 'skills', 'update', 'refresh']);
 const GLOBAL_OPTIONS = new Set(['--quiet', '--no-banner']);
 const GLOBAL_OPTIONS_WITH_VALUE = new Set(['--lang', '--language']);
 
@@ -491,6 +493,15 @@ async function runUpdate(): Promise<void> {
   }
 }
 
+async function runRefresh(): Promise<void> {
+  const result = await runTmlusRefresh(process.env);
+  renderTmlusRefreshSummary(result, { quiet });
+
+  if (tmlusRefreshHasFailure(result)) {
+    process.exitCode = 1;
+  }
+}
+
 async function runInit(): Promise<void> {
   await renderStartupBanner({ args });
   const result = await runInitFlow({
@@ -552,6 +563,11 @@ async function main(): Promise<void> {
 
   if (commandResolution.command === 'update') {
     await runUpdate();
+    return;
+  }
+
+  if (commandResolution.command === 'refresh') {
+    await runRefresh();
     return;
   }
 

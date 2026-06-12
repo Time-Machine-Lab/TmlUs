@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -11,14 +11,15 @@ const execFileAsync = promisify(execFile);
 const cli = path.resolve('bin/tmlus.js');
 const commandWiki = readFileSync(path.resolve('..', 'docs', 'TmlUs命令Wiki.md'), 'utf8');
 
-async function run(args, cwd = process.cwd()) {
+async function run(args, cwd = process.cwd(), extraEnv = {}) {
   return execFileAsync(process.execPath, [cli, ...args], {
     cwd,
     env: {
       ...process.env,
       CI: '1',
       TMLUS_NO_BANNER: '1',
-      TMLUS_DISABLE_REMOTE_CATALOG: '1'
+      TMLUS_DISABLE_REMOTE_CATALOG: '1',
+      ...extraEnv
     }
   });
 }
@@ -29,6 +30,7 @@ assert.match(help.stdout, /ide/);
 assert.match(help.stdout, /skills/);
 assert.match(help.stdout, /tools/);
 assert.match(help.stdout, /update/);
+assert.match(help.stdout, /refresh/);
 assert.match(help.stdout, /tml-spec/);
 assert.match(help.stdout, /work-mode/);
 assert.match(help.stdout, /Project initialization/);
@@ -43,7 +45,7 @@ for (const oldCommand of ['help', 'skills', 'tools']) {
   assert.doesNotMatch(help.stdout, new RegExp(['tmlus', `--${oldCommand}`].join(' ')));
 }
 
-for (const oldCommand of ['help', 'skills', 'tools', 'ide', 'version', 'update', 'tml-spec', 'work-mode']) {
+for (const oldCommand of ['help', 'skills', 'tools', 'ide', 'version', 'update', 'refresh', 'tml-spec', 'work-mode']) {
   let failed = false;
   try {
     await run([`--${oldCommand}`]);
@@ -59,6 +61,8 @@ const englishHelp = await run(['help', '--lang', 'en']);
 assert.match(englishHelp.stdout, /AI IDE environment initialization/);
 assert.match(englishHelp.stdout, /External Tool discovery and installation/);
 assert.match(englishHelp.stdout, /global npm installation/);
+assert.match(englishHelp.stdout, /Refresh cache/);
+assert.match(englishHelp.stdout, /without updating the CLI package/);
 assert.match(englishHelp.stdout, /TML Docs structure initialization/);
 assert.match(englishHelp.stdout, /Project work mode initialization/);
 
@@ -104,6 +108,34 @@ try {
 
   const workModeSkip = await run(['work-mode', 'skip'], workspace);
   assert.match(workModeSkip.stdout, /\[skipped\] Skip/);
+
+  const refreshCache = await mkdtemp(path.join(tmpdir(), 'tmlus-refresh-cache-'));
+  try {
+    await mkdir(refreshCache, { recursive: true });
+    await writeFile(path.join(refreshCache, 'skills-catalog.json'), '{}', 'utf8');
+    await writeFile(path.join(refreshCache, 'skills-search-sources.json'), '{}', 'utf8');
+    await writeFile(path.join(refreshCache, 'skills-search-tml-skills.json'), '{}', 'utf8');
+    await writeFile(path.join(refreshCache, 'unrelated.txt'), 'keep', 'utf8');
+
+    const refresh = await run(['refresh', '--quiet'], workspace, {
+      TMLUS_DISABLE_REMOTE_CATALOG: '',
+      TMLUS_SKILL_CACHE_DIR: refreshCache,
+      TMLUS_SKILL_CATALOG_URL: 'https://example.invalid/catalog.json',
+      TMLUS_SKILL_SEARCH_SOURCES_URL: 'https://example.invalid/search-sources.json'
+    });
+    assert.match(refresh.stdout, /completed: deleted 3, skipped 0, failed 0/);
+    assert.equal(existsSync(path.join(refreshCache, 'skills-catalog.json')), false);
+    assert.equal(existsSync(path.join(refreshCache, 'skills-search-sources.json')), false);
+    assert.equal(existsSync(path.join(refreshCache, 'skills-search-tml-skills.json')), false);
+    assert.equal(existsSync(path.join(refreshCache, 'unrelated.txt')), true);
+
+    const refreshAgain = await run(['refresh', '--quiet'], workspace, {
+      TMLUS_SKILL_CACHE_DIR: refreshCache
+    });
+    assert.match(refreshAgain.stdout, /completed: deleted 0, skipped 2, failed 0/);
+  } finally {
+    await rm(refreshCache, { force: true, recursive: true });
+  }
 
   const openspecWorkspace = await mkdtemp(path.join(tmpdir(), 'tmlus-openspec-'));
   try {

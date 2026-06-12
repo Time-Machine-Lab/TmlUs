@@ -6,6 +6,7 @@ import type {
   SkillDefinition,
   SkillInstallResult,
   TmlDocsStructureResult,
+  TmlusRefreshResult,
   TmlusUpdateResult,
   ToolDefinition,
   ToolInstallProgressEvent,
@@ -365,6 +366,33 @@ export function renderTmlusUpdateSummary(result: TmlusUpdateResult, options: Out
 
   if (result.status === 'unsupported-invocation') {
     printInfo('  For npx usage, run `npx @time-machine-lab/tmlus@latest <command>` to use the newest release directly.', options);
+  }
+}
+
+export function renderTmlusRefreshSummary(result: TmlusRefreshResult, options: OutputOptions = {}): void {
+  const deleted = result.entries.filter((entry) => entry.status === 'deleted').length;
+  const skipped = result.entries.filter((entry) => entry.status === 'skipped').length;
+  const failed = result.entries.filter((entry) => entry.status === 'failed').length;
+  const status = failed ? 'failed' : 'completed';
+  const summary = `${status}: deleted ${deleted}, skipped ${skipped}, failed ${failed}. Cache: ${result.cacheDirectory}`;
+
+  if (options.quiet) {
+    if (failed) {
+      console.error(summary);
+      return;
+    }
+
+    console.log(summary);
+    return;
+  }
+
+  printSection('TmlUs refresh result', options);
+  printInfo(`  Cache: ${result.cacheDirectory}`, options);
+  printInfo(`  [${status}] deleted ${deleted}, skipped ${skipped}, failed ${failed}`, options);
+
+  for (const entry of result.entries) {
+    const suffix = entry.error ? `  ${entry.error}` : '';
+    printInfo(`  [${entry.status}] ${entry.label}${suffix}`, options);
   }
 }
 

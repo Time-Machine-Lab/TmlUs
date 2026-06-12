@@ -189,3 +189,17 @@ export interface TmlusUpdateResult {
   manualCommand?: string;
   failureStage?: TmlusUpdateFailureStage;
 }
+
+export type TmlusRefreshEntryStatus = 'deleted' | 'skipped' | 'failed';
+
+export interface TmlusRefreshEntryResult {
+  label: string;
+  path: string;
+  status: TmlusRefreshEntryStatus;
+  error?: string;
+}
+
+export interface TmlusRefreshResult {
+  cacheDirectory: string;
+  entries: TmlusRefreshEntryResult[];
+}

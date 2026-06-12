@@ -8,6 +8,7 @@
 | `tmlus help` | 输出当前注册命令、全局选项和示例 | 用户或 Agent 快速查询命令 |
 | `tmlus version` | 输出当前 CLI 版本，保持无装饰 | 脚本、发布和排查版本问题 |
 | `tmlus update` | 检查当前 CLI 版本，并在 npm 有新版本时更新全局安装 | 保持本机 `tmlus` 与公开 npm 版本同步 |
+| `tmlus refresh` | 清理 TmlUs 管理的本地 Skill 目录与远程搜索缓存 | 远程 Skill 列表异常或需要立即重建缓存 |
 | `tmlus ide` | 检测并初始化 AI IDE 目录 | 为 Codex、Claude Code、Cursor、Trae、CodeBuddy 准备项目环境 |
 | `tmlus skills` | 浏览、搜索并安装 TmlUs 维护的 AI Skills | 给当前项目安装团队认可的 Skill |
 | `tmlus tools` | 浏览并安装外部工具适配 | 安装 CodeGraph 等可供 Agent 使用的外部工具 |
@@ -120,7 +121,25 @@ tmlus update --quiet
 | npx 最新版调用 | `npx @time-machine-lab/tmlus@latest <command>` |
 | 失败退出码 | 查询、安装或验证失败时返回非零状态 |
 
-### 3.5 `tmlus ide`
+### 3.5 `tmlus refresh`
+
+`tmlus refresh` 用于清理 TmlUs 管理的本地缓存。它只删除 Skill 官方目录缓存、远程搜索源注册表缓存和远程 Skill 搜索结果缓存，不会更新 CLI 包，也不会删除项目文件、AI IDE 目录、已安装 Skill、`.codegraph/`、OpenSpec、npm 或 Git 缓存。
+
+```bash
+tmlus refresh
+tmlus refresh --quiet
+```
+
+行为说明：
+
+- 命令会使用与 `tmlus skills` 和 `tmlus skills search` 相同的缓存目录解析规则，支持 `TMLUS_SKILL_CACHE_DIR` 覆盖。
+- 清理目标包括 `skills-catalog.json`、`skills-search-sources.json` 和 `skills-search-*.json`。
+- 缓存文件不存在时会被视为 skipped，不会导致失败。
+- 删除失败时会输出失败条目并返回非零退出码。
+- `tmlus refresh` 不会主动请求远程数据；后续运行 `tmlus skills` 或 `tmlus skills search` 时会按现有远程加载与 fallback 流程重建缓存。
+- 如需更新已安装的 CLI 包，请使用 `tmlus update`。
+
+### 3.6 `tmlus ide`
 
 `tmlus ide` 用于检测并初始化 AI IDE 环境目录。
 
@@ -153,7 +172,7 @@ tmlus ide cursor --quiet
 - 未知 IDE 会返回错误，并提示支持的环境列表。
 - `Esc` 取消交互式选择时，命令直接停止，不继续写入。
 
-### 3.6 `tmlus skills`
+### 3.7 `tmlus skills`
 
 `tmlus skills` 用于发现、搜索并安装 TmlUs 维护的 AI Skills。
 
@@ -207,7 +226,7 @@ Skill 目录：
 - 交互式终端中，`tmlus skills` 加载 Skill 目录时会显示轻量 loading 反馈；`--quiet`、CI、非 TTY 和 dumb terminal 会保持干净输出。
 - 可通过 `TMLUS_DISABLE_REMOTE_CATALOG=1` 禁用远程目录加载，或通过 `TMLUS_SKILL_CATALOG_URL`、`TMLUS_SKILL_SEARCH_SOURCES_URL`、`TMLUS_SKILL_CATALOG_TTL_HOURS` 调整远程目录与缓存行为。
 
-### 3.7 `tmlus tools`
+### 3.8 `tmlus tools`
 
 `tmlus tools` 用于发现并安装 TmlUs 维护的外部工具适配。
 
@@ -237,7 +256,7 @@ tmlus tools cg --ide codex,claude,cursor
 - 如果未传 `--ide`，交互式终端会提示选择目标环境；非交互场景会使用当前项目中已存在且受支持的环境。
 - 工具安装失败时会输出失败步骤和可手动执行的修复命令。
 
-### 3.8 `tmlus tml-spec`
+### 3.9 `tmlus tml-spec`
 
 `tmlus tml-spec` 用于创建或修复 TML Docs 目录结构。
 
@@ -263,7 +282,7 @@ tmlus tml-spec --quiet
 - 已存在目录和文件会被标记为 existing，不会重复写入。
 - 任何目录或文件创建失败都会让命令以失败状态结束。
 
-### 3.9 `tmlus work-mode`
+### 3.10 `tmlus work-mode`
 
 `tmlus work-mode` 用于初始化项目工作模式。
 
