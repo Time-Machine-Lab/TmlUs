@@ -10,9 +10,23 @@
       ],
       "displayName": "TML Skills",
       "type": "github-directory",
-      "source": "github:Time-Machine-Lab/TML-Skills/skills",
+      "source": "github:Time-Machine-Lab/TML-Skills",
       "category": "TML Team",
-      "description": "TML 团队维护的 Skill 来源，提供文档规范、内容处理、前端交付、工具适配等团队认可的 AI 能力。"
+      "description": "TML 团队维护的 Skill 来源，提供文档规范、内容处理、前端交付、工具适配等团队认可的 AI 能力。",
+      "resolver": {
+        "type": "github-skill-files",
+        "patterns": [
+          "skills/{id}/SKILL.md"
+        ],
+        "metadata": {
+          "id": "path.id",
+          "name": "frontmatter.name",
+          "category": "frontmatter.category",
+          "description": "frontmatter.description"
+        },
+        "installSource": "skills/{id}",
+        "concurrency": 8
+      }
     },
     {
       "id": "mattpocock-skills",
@@ -23,12 +37,21 @@
       ],
       "displayName": "Matt Pocock Skills",
       "type": "github-directory",
-      "source": "github:mattpocock/skills/skills",
+      "source": "github:mattpocock/skills",
       "category": "Real Engineering",
       "description": "面向真实软件工程的 AI Coding 工作流来源，帮助解决需求未对齐、Agent 过度啰嗦、缺少反馈环、调试不系统、TDD 落地、PRD/Issue 拆分、架构治理、原型验证和会话交接等问题。",
-      "discovery": {
-        "strategy": "skill-manifest",
-        "maxDepth": 2,
+      "resolver": {
+        "type": "github-skill-files",
+        "patterns": [
+          "skills/{category}/{id}/SKILL.md"
+        ],
+        "metadata": {
+          "id": "path.id",
+          "name": "frontmatter.name",
+          "category": "path.category",
+          "description": "frontmatter.description"
+        },
+        "installSource": "skills/{category}/{id}",
         "includeCategories": [
           "engineering",
           "productivity",

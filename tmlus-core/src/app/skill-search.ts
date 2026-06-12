@@ -103,6 +103,7 @@ function sourceCachePath(source: SkillSearchSource): string {
 function sourceCacheKey(source: SkillSearchSource): string {
   return JSON.stringify({
     source: source.source,
+    resolver: source.resolver,
     discovery: source.discovery
   });
 }
@@ -168,7 +169,7 @@ async function discoverDirectorySkills(source: SkillSearchSource): Promise<Skill
 }
 
 async function discoverManifestSkills(source: SkillSearchSource): Promise<SkillDefinition[]> {
-  if (!source.source) {
+  if (!source.source || !source.resolver) {
     return [];
   }
 
@@ -178,13 +179,23 @@ async function discoverManifestSkills(source: SkillSearchSource): Promise<SkillD
   }
 
   const manifests = await listGitHubSkillManifests(source.source, {
-    maxDepth: source.discovery?.maxDepth,
-    includeCategories: source.discovery?.includeCategories,
-    excludeCategories: source.discovery?.excludeCategories,
-    concurrency: source.discovery?.concurrency
+    patterns: source.resolver.patterns,
+    metadata: source.resolver.metadata,
+    sourceMetadata: {
+      id: source.id,
+      displayName: source.displayName,
+      category: source.category,
+      description: source.description,
+      source: source.source
+    },
+    installSource: source.resolver.installSource,
+    maxDepth: source.resolver.maxDepth,
+    includeCategories: source.resolver.includeCategories,
+    excludeCategories: source.resolver.excludeCategories,
+    concurrency: source.resolver.concurrency
   }) ?? [];
   const skills = manifests.map((manifest) => ({
-    id: manifest.id,
+    id: manifest.id.toLowerCase(),
     name: manifest.name ?? manifest.id,
     source: manifest.source,
     category: manifest.category ?? source.category,
@@ -199,7 +210,7 @@ async function discoverManifestSkills(source: SkillSearchSource): Promise<SkillD
 }
 
 async function discoverSkillsForSource(source: SkillSearchSource): Promise<{ skills: SkillDefinition[]; failed: boolean }> {
-  if (source.discovery?.strategy !== 'skill-manifest') {
+  if (source.resolver?.type !== 'github-skill-files') {
     return {
       skills: await discoverDirectorySkills(source),
       failed: false
@@ -217,8 +228,15 @@ async function discoverSkillsForSource(source: SkillSearchSource): Promise<{ ski
       return { skills: stale, failed: false };
     }
 
+    if (source.discovery?.strategy === 'skill-manifest') {
+      return {
+        skills: await discoverDirectorySkills(source),
+        failed: true
+      };
+    }
+
     return {
-      skills: await discoverDirectorySkills(source),
+      skills: [],
       failed: true
     };
   }

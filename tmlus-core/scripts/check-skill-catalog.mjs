@@ -9,6 +9,7 @@ import {
   normalizeSkillSearchSourcesDocument
 } from '../dist/catalog/skill-catalog.js';
 import {
+  matchGitHubSkillPath,
   parseSkillFrontmatter
 } from '../dist/adapters/tools/github-skill-source.js';
 import {
@@ -104,16 +105,26 @@ await withTempCache(async (cacheDir) => {
   const tmlSource = registry.sources.find((source) => source.id === 'tml-skills');
   assert.equal(typeof tmlSource.description, 'string');
   assert.equal(tmlSource.description.includes('TML'), true);
+  assert.equal(tmlSource.source, 'github:Time-Machine-Lab/TML-Skills');
+  assert.equal(tmlSource.resolver.type, 'github-skill-files');
+  assert.deepEqual(tmlSource.resolver.patterns, ['skills/{id}/SKILL.md']);
+  assert.equal(tmlSource.resolver.metadata.category, 'frontmatter.category');
+  assert.equal(tmlSource.resolver.installSource, 'skills/{id}');
 
   const mattSource = registry.sources.find((source) => source.id === 'mattpocock-skills');
   assert.equal(mattSource.displayName, 'Matt Pocock Skills');
   assert.equal(mattSource.description.includes('需求未对齐'), true);
-  assert.equal(mattSource.discovery.strategy, 'skill-manifest');
-  assert.equal(mattSource.discovery.maxDepth, 2);
-  assert.deepEqual(mattSource.discovery.includeCategories, ['engineering', 'productivity', 'misc']);
-  assert.equal(mattSource.discovery.excludeCategories.includes('deprecated'), true);
-  assert.equal(mattSource.discovery.excludeCategories.includes('personal'), true);
-  assert.equal(mattSource.discovery.excludeCategories.includes('in-progress'), true);
+  assert.equal(mattSource.source, 'github:mattpocock/skills');
+  assert.equal(mattSource.resolver.type, 'github-skill-files');
+  assert.deepEqual(mattSource.resolver.patterns, ['skills/{category}/{id}/SKILL.md']);
+  assert.equal(mattSource.resolver.metadata.name, 'frontmatter.name');
+  assert.equal(mattSource.resolver.metadata.category, 'path.category');
+  assert.equal(mattSource.resolver.installSource, 'skills/{category}/{id}');
+  assert.deepEqual(mattSource.resolver.includeCategories, ['engineering', 'productivity', 'misc']);
+  assert.equal(mattSource.resolver.excludeCategories.includes('deprecated'), true);
+  assert.equal(mattSource.resolver.excludeCategories.includes('personal'), true);
+  assert.equal(mattSource.resolver.excludeCategories.includes('in-progress'), true);
+  assert.equal(mattSource.discovery, undefined);
 
   const mattAliasResolved = resolveSkillSearchSources(['mattpocock'], registry);
   assert.deepEqual(mattAliasResolved.sources.map((source) => source.id), ['mattpocock-skills']);
@@ -135,11 +146,68 @@ await withTempCache(async (cacheDir) => {
   });
   assert.equal(legacyRegistry.sources[0].description, undefined);
   assert.equal(legacyRegistry.sources[0].discovery, undefined);
+  assert.equal(legacyRegistry.sources[0].resolver, undefined);
 }
 
 {
+  const legacyManifestRegistry = normalizeSkillSearchSourcesDocument({
+    version: 1,
+    defaultSourceId: 'legacy-manifest',
+    sources: [
+      {
+        id: 'legacy-manifest',
+        displayName: 'Legacy Manifest',
+        type: 'github-directory',
+        source: 'github:example/legacy/skills',
+        category: 'Legacy',
+        discovery: {
+          strategy: 'skill-manifest',
+          maxDepth: 2,
+          excludeCategories: ['deprecated'],
+          concurrency: 4
+        }
+      }
+    ]
+  });
+  assert.equal(legacyManifestRegistry.sources[0].discovery.strategy, 'skill-manifest');
+  assert.equal(legacyManifestRegistry.sources[0].resolver.type, 'github-skill-files');
+  assert.deepEqual(legacyManifestRegistry.sources[0].resolver.patterns, ['{category}/{id}/SKILL.md']);
+  assert.equal(legacyManifestRegistry.sources[0].resolver.excludeCategories.includes('deprecated'), true);
+}
+
+{
+  assert.throws(() => normalizeSkillSearchSourcesDocument({
+    version: 1,
+    defaultSourceId: 'invalid',
+    sources: [
+      {
+        id: 'invalid',
+        displayName: 'Invalid',
+        type: 'github-directory',
+        source: 'github:example/invalid',
+        category: 'Invalid',
+        resolver: {
+          type: 'remote-js',
+          patterns: ['skills/{id}/SKILL.md']
+        }
+      }
+    ]
+  }), /resolver\.type is unsupported/);
+}
+
+{
+  assert.deepEqual(
+    matchGitHubSkillPath('skills/{category}/{id}/SKILL.md', 'skills/engineering/tdd/SKILL.md'),
+    { category: 'engineering', id: 'tdd' }
+  );
+  assert.equal(
+    matchGitHubSkillPath('skills/{category}/{id}/SKILL.md', 'skills/deprecated/SKILL.md'),
+    undefined
+  );
+
   const parsed = parseSkillFrontmatter(`---
 name: example-skill
+category: 示例
 description: >
   Solve one problem.
   Keep details readable.
@@ -149,6 +217,7 @@ description: >
 `);
   assert.deepEqual(parsed, {
     name: 'example-skill',
+    category: '示例',
     description: 'Solve one problem. Keep details readable.'
   });
 

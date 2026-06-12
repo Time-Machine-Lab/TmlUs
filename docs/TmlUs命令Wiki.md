@@ -181,8 +181,8 @@ Skill 目录：
 - 远程目录不可用、缓存不可用或数据校验失败时，会退回到 CLI 包内置的 Skill fallback 目录。
 - `tmlus skills search` 默认搜索 `Time-Machine-Lab/TML-Skills/skills`。TmlUs 官方目录不作为 Search Source 展示，因为 `tmlus skills` 已经直接加载官方目录。
 - Search Source 可以带有中文描述，交互式选择来源时会优先展示该来源能解决的问题。
-- 支持的远程来源包括 `mattpocock-skills`，可通过 `tmlus skills search --search mattpocock-skills` 搜索 Matt Pocock 的工程工作流 Skills。
-- 对声明为 manifest discovery 的远程来源，TmlUs 会递归发现包含 `SKILL.md` 的目录，并优先使用 `SKILL.md` Frontmatter 中的 `name` 和 `description` 展示远程 Skill。
+- 支持的远程来源包括 `mattpocock-skills`，可通过 `tmlus skills search --search mattpocock-skills` 搜索 Matt Pocock 的工程工作流 Skills；默认不会展示 `deprecated`、`personal`、`in-progress` 分类。
+- 对声明了 resolver 的远程来源，TmlUs 会按来源自己的仓库结构规则匹配 `SKILL.md`，并优先使用 `SKILL.md` Frontmatter 中的 `name`、`category` 和 `description` 展示远程 Skill。
 
 当前官方 Skill：
 

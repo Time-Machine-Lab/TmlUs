@@ -46,6 +46,25 @@ export interface RemoteSkillDefinition {
 
 export type SkillSearchSourceType = 'github-directory';
 export type SkillSearchDiscoveryStrategy = 'directory' | 'skill-manifest';
+export type SkillSearchResolverType = 'github-skill-files';
+
+export interface SkillSearchResolverMetadata {
+  id?: string;
+  name?: string;
+  category?: string;
+  description?: string;
+}
+
+export interface SkillSearchResolver {
+  type: SkillSearchResolverType;
+  patterns: string[];
+  metadata?: SkillSearchResolverMetadata;
+  installSource?: string;
+  includeCategories?: string[];
+  excludeCategories?: string[];
+  concurrency?: number;
+  maxDepth?: number;
+}
 
 export interface SkillSearchDiscoveryOptions {
   strategy: SkillSearchDiscoveryStrategy;
@@ -63,6 +82,7 @@ export interface SkillSearchSource {
   source?: string;
   category: string;
   description?: string;
+  resolver?: SkillSearchResolver;
   discovery?: SkillSearchDiscoveryOptions;
 }
 
@@ -96,21 +116,40 @@ export const BUNDLED_SKILL_SEARCH_SOURCE_REGISTRY: SkillSearchSourceRegistry = {
       aliases: ['tml-team'],
       displayName: 'TML Skills',
       type: 'github-directory',
-      source: 'github:Time-Machine-Lab/TML-Skills/skills',
+      source: 'github:Time-Machine-Lab/TML-Skills',
       category: 'TML Team',
-      description: 'TML 团队维护的 Skill 来源，提供文档规范、内容处理、前端交付、工具适配等团队认可的 AI 能力。'
+      description: 'TML 团队维护的 Skill 来源，提供文档规范、内容处理、前端交付、工具适配等团队认可的 AI 能力。',
+      resolver: {
+        type: 'github-skill-files',
+        patterns: ['skills/{id}/SKILL.md'],
+        metadata: {
+          id: 'path.id',
+          name: 'frontmatter.name',
+          category: 'frontmatter.category',
+          description: 'frontmatter.description'
+        },
+        installSource: 'skills/{id}',
+        concurrency: 8
+      }
     },
     {
       id: 'mattpocock-skills',
       aliases: ['mattpocock', 'real-engineering', 'skills-for-real-engineers'],
       displayName: 'Matt Pocock Skills',
       type: 'github-directory',
-      source: 'github:mattpocock/skills/skills',
+      source: 'github:mattpocock/skills',
       category: 'Real Engineering',
       description: '面向真实软件工程的 AI Coding 工作流来源，帮助解决需求未对齐、Agent 过度啰嗦、缺少反馈环、调试不系统、TDD 落地、PRD/Issue 拆分、架构治理、原型验证和会话交接等问题。',
-      discovery: {
-        strategy: 'skill-manifest',
-        maxDepth: 2,
+      resolver: {
+        type: 'github-skill-files',
+        patterns: ['skills/{category}/{id}/SKILL.md'],
+        metadata: {
+          id: 'path.id',
+          name: 'frontmatter.name',
+          category: 'path.category',
+          description: 'frontmatter.description'
+        },
+        installSource: 'skills/{category}/{id}',
         includeCategories: ['engineering', 'productivity', 'misc'],
         excludeCategories: ['deprecated', 'personal', 'in-progress'],
         concurrency: 8
@@ -298,6 +337,81 @@ function normalizeSkill(value: unknown, index: number): SkillDefinition {
   };
 }
 
+function validateResolverPattern(pattern: string, label: string): void {
+  const normalized = pattern.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+  if (!normalized || (!normalized.endsWith('/SKILL.md') && normalized !== 'SKILL.md')) {
+    throw new Error(`${label} must point to SKILL.md.`);
+  }
+
+  const variables = normalized.match(/\{[^}]+\}/g) ?? [];
+  for (const variable of variables) {
+    const name = variable.slice(1, -1);
+    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) {
+      throw new Error(`${label} contains an invalid path variable.`);
+    }
+  }
+}
+
+function optionalResolverMetadata(value: Record<string, unknown>, label: string): SkillSearchResolverMetadata | undefined {
+  const raw = value.metadata;
+  if (raw === undefined) {
+    return undefined;
+  }
+
+  assertObject(raw, `${label}.metadata`);
+  const metadata: SkillSearchResolverMetadata = {};
+  for (const key of ['id', 'name', 'category', 'description'] as const) {
+    const mapping = optionalString(raw, key, `${label}.metadata`);
+    if (!mapping) {
+      continue;
+    }
+
+    if (!/^(path|frontmatter|source)\.[A-Za-z][A-Za-z0-9_]*$/.test(mapping)) {
+      throw new Error(`${label}.metadata.${key} must reference path.*, frontmatter.*, or source.*.`);
+    }
+
+    metadata[key] = mapping;
+  }
+
+  return Object.keys(metadata).length ? metadata : undefined;
+}
+
+function normalizeSearchResolver(value: unknown, label: string): SkillSearchResolver | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  assertObject(value, `${label}.resolver`);
+  const type = stringField(value, 'type', `${label}.resolver`) as SkillSearchResolverType;
+  if (type !== 'github-skill-files') {
+    throw new Error(`${label}.resolver.type is unsupported.`);
+  }
+
+  const patterns = optionalStringArray(value, 'patterns', `${label}.resolver`);
+  if (!patterns?.length) {
+    throw new Error(`${label}.resolver.patterns must be a non-empty string array.`);
+  }
+  patterns.forEach((pattern, index) => validateResolverPattern(pattern, `${label}.resolver.patterns[${index}]`));
+
+  const metadata = optionalResolverMetadata(value, `${label}.resolver`);
+  const installSource = optionalString(value, 'installSource', `${label}.resolver`);
+  const includeCategories = optionalStringArray(value, 'includeCategories', `${label}.resolver`);
+  const excludeCategories = optionalStringArray(value, 'excludeCategories', `${label}.resolver`);
+  const concurrency = optionalPositiveInteger(value, 'concurrency', `${label}.resolver`);
+  const maxDepth = optionalPositiveInteger(value, 'maxDepth', `${label}.resolver`);
+
+  return {
+    type,
+    patterns,
+    ...(metadata ? { metadata } : {}),
+    ...(installSource ? { installSource } : {}),
+    ...(includeCategories ? { includeCategories } : {}),
+    ...(excludeCategories ? { excludeCategories } : {}),
+    ...(concurrency ? { concurrency } : {}),
+    ...(maxDepth ? { maxDepth } : {})
+  };
+}
+
 function normalizeSearchDiscovery(value: unknown, label: string): SkillSearchDiscoveryOptions | undefined {
   if (value === undefined) {
     return undefined;
@@ -319,6 +433,29 @@ function normalizeSearchDiscovery(value: unknown, label: string): SkillSearchDis
     ...(includeCategories ? { includeCategories } : {}),
     ...(excludeCategories ? { excludeCategories } : {}),
     ...(concurrency ? { concurrency } : {})
+  };
+}
+
+function resolverFromDiscovery(discovery: SkillSearchDiscoveryOptions | undefined): SkillSearchResolver | undefined {
+  if (!discovery || discovery.strategy !== 'skill-manifest') {
+    return undefined;
+  }
+
+  const categorized = discovery.maxDepth === undefined || discovery.maxDepth > 1;
+  return {
+    type: 'github-skill-files',
+    patterns: [categorized ? '{category}/{id}/SKILL.md' : '{id}/SKILL.md'],
+    metadata: {
+      id: 'path.id',
+      name: 'frontmatter.name',
+      category: categorized ? 'path.category' : 'source.category',
+      description: 'frontmatter.description'
+    },
+    installSource: categorized ? '{category}/{id}' : '{id}',
+    ...(discovery.includeCategories ? { includeCategories: discovery.includeCategories } : {}),
+    ...(discovery.excludeCategories ? { excludeCategories: discovery.excludeCategories } : {}),
+    ...(discovery.concurrency ? { concurrency: discovery.concurrency } : {}),
+    ...(discovery.maxDepth ? { maxDepth: discovery.maxDepth } : {})
   };
 }
 
@@ -359,7 +496,9 @@ function normalizeSearchSource(value: unknown, index: number): SkillSearchSource
   }
 
   const description = optionalString(value, 'description', label);
+  const resolver = normalizeSearchResolver(value.resolver, label);
   const discovery = normalizeSearchDiscovery(value.discovery, label);
+  const compatibleResolver = resolver ?? resolverFromDiscovery(discovery);
 
   return {
     id,
@@ -369,6 +508,7 @@ function normalizeSearchSource(value: unknown, index: number): SkillSearchSource
     ...(source ? { source } : {}),
     category: stringField(value, 'category', label),
     ...(description ? { description } : {}),
+    ...(compatibleResolver ? { resolver: compatibleResolver } : {}),
     ...(discovery ? { discovery } : {})
   };
 }
