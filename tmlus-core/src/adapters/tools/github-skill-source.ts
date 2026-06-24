@@ -166,6 +166,27 @@ async function downloadFile(url: string, destinationPath: string): Promise<void>
   await writeFile(destinationPath, Buffer.from(await response.arrayBuffer()));
 }
 
+async function downloadRawGitHubFile(source: GitHubSource, sourcePath: string, destinationPath: string): Promise<boolean> {
+  const encodedPath = sourcePath.split('/').map(encodeURIComponent).join('/');
+
+  for (const branch of branchCandidates(source)) {
+    const url = `https://raw.githubusercontent.com/${source.owner}/${source.repo}/${branch}/${encodedPath}`;
+    const response = await fetch(url, {
+      headers: githubHeaders()
+    });
+
+    if (!response.ok) {
+      continue;
+    }
+
+    await mkdir(path.dirname(destinationPath), { recursive: true });
+    await writeFile(destinationPath, Buffer.from(await response.arrayBuffer()));
+    return true;
+  }
+
+  return false;
+}
+
 function branchCandidates(source: GitHubSource): string[] {
   return [...new Set([source.ref, 'main', 'master'].filter(Boolean) as string[])];
 }
@@ -727,7 +748,16 @@ async function downloadGitHubDirectory(source: GitHubSource, sourceDirectory: st
 
 async function downloadGitHubPath(source: GitHubSource, sourcePath: string, destinationPath: string): Promise<void> {
   const apiUrl = `https://api.github.com/repos/${source.owner}/${source.repo}/contents/${sourcePath}`;
-  const item = await getJson<GitHubContentItem | GitHubContentItem[]>(apiUrl);
+  let item: GitHubContentItem | GitHubContentItem[];
+  try {
+    item = await getJson<GitHubContentItem | GitHubContentItem[]>(apiUrl);
+  } catch (error) {
+    if (await downloadRawGitHubFile(source, sourcePath, destinationPath)) {
+      return;
+    }
+
+    throw error;
+  }
 
   if (Array.isArray(item)) {
     const nestedSource = { ...source, directory: sourcePath };

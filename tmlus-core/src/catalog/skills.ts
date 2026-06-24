@@ -154,7 +154,10 @@ export const SKILL_CATALOG: SkillDefinition[] = [
     category: 'Frontend Design',
     description: 'Anti-slop frontend design skill for landing pages, portfolios, and redesigns that should avoid templated AI-looking UI.',
     installer: {
-      strategy: 'github-directory'
+      strategy: 'github-root-skill',
+      includePaths: [
+        'SKILL.md'
+      ]
     },
     targets: COMMON_SKILL_TARGETS
   },
