@@ -109,6 +109,68 @@ export const SKILL_CATALOG: SkillDefinition[] = [
     },
     targets: COMMON_SKILL_TARGETS
   },
+
+  {
+    id: 'frontend-design',
+    aliases: ['front-end-design', 'anthropic-frontend-design'],
+    name: 'Frontend Design',
+    source: 'github:anthropics/skills/skills/frontend-design',
+    category: 'Frontend Design',
+    description: 'Anthropic frontend design skill for distinctive visual direction, typography, layout, and non-templated UI execution.',
+    installer: {
+      strategy: 'github-directory'
+    },
+    targets: COMMON_SKILL_TARGETS
+  },
+  {
+    id: 'ui-ux-pro-max',
+    aliases: ['uiux-pro-max', 'uupm'],
+    name: 'UI/UX Pro Max',
+    source: 'github:nextlevelbuilder/ui-ux-pro-max-skill',
+    category: 'Frontend Design',
+    description: 'Installs the UI/UX Pro Max design skill bundle for UI styling, design systems, brand identity, slides, banners, and visual assets.',
+    installer: {
+      strategy: 'github-skill-bundle',
+      bundleDirectory: '.claude/skills'
+    },
+    targets: COMMON_SKILL_TARGETS
+  },
+  {
+    id: 'impeccable',
+    name: 'Impeccable',
+    source: 'github:pbakaus/impeccable/.agents/skills/impeccable',
+    category: 'Frontend Design',
+    description: 'Design craft skill for shaping, auditing, polishing, hardening, and iterating production-grade frontend interfaces.',
+    installer: {
+      strategy: 'github-directory'
+    },
+    targets: COMMON_SKILL_TARGETS
+  },
+  {
+    id: 'taste-skill',
+    aliases: ['taste', 'tasteskill', 'design-taste-frontend'],
+    name: 'Taste Skill',
+    source: 'github:Leonxlnx/taste-skill/skills/taste-skill',
+    category: 'Frontend Design',
+    description: 'Anti-slop frontend design skill for landing pages, portfolios, and redesigns that should avoid templated AI-looking UI.',
+    installer: {
+      strategy: 'github-directory'
+    },
+    targets: COMMON_SKILL_TARGETS
+  },
+  {
+    id: 'ui-skills',
+    aliases: ['ibelick-ui-skills', 'ui-skills-bundle'],
+    name: 'UI Skills',
+    source: 'github:ibelick/ui-skills',
+    category: 'Frontend Design',
+    description: 'Installs the UI Skills bundle for routing and focused UI work such as accessibility, metadata, motion performance, and baseline UI polish.',
+    installer: {
+      strategy: 'github-skill-bundle',
+      bundleDirectory: 'skills'
+    },
+    targets: COMMON_SKILL_TARGETS
+  },
   {
     id: 'db-skills',
     aliases: ['dbskill', 'dontbesilent'],
