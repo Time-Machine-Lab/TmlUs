@@ -92,13 +92,13 @@ try {
   const skillclaw = findToolById('skillclaw');
   const remoteFixturePath = await mkdtemp(path.join(tmpdir(), 'tmlus-skillclaw-remote-fixture-'));
   const skillclawSourcePath = path.resolve('..', 'data', 'tools', 'skillclaw');
-  for (const fileName of ['install-runbook.md', 'skillclaw-help.md', 'tml-team-config-guide.md', 'manifest.json']) {
+  for (const fileName of ['install-runbook.md', 'skillclaw-help.md', 'manifest.json']) {
     await cp(path.join(skillclawSourcePath, fileName), path.join(remoteFixturePath, fileName));
   }
   const prepared = await prepareToolDocumentPackage(skillclaw, {
     homeDir: envHome,
     downloader: async (_source, _includePaths, destinationPath) => {
-      for (const fileName of ['install-runbook.md', 'skillclaw-help.md', 'tml-team-config-guide.md', 'manifest.json']) {
+      for (const fileName of ['install-runbook.md', 'skillclaw-help.md', 'manifest.json']) {
         await cp(path.join(remoteFixturePath, fileName), path.join(destinationPath, fileName));
       }
       return true;
@@ -112,7 +112,6 @@ try {
   const skillclawEnv = path.join(envHome, '.tmlus', 'env', 'skillclaw');
   assert.equal(existsSync(path.join(skillclawEnv, 'install-runbook.md')), true);
   assert.equal(existsSync(path.join(skillclawEnv, 'skillclaw-help.md')), true);
-  assert.equal(existsSync(path.join(skillclawEnv, 'tml-team-config-guide.md')), true);
   assert.equal(existsSync(path.join(skillclawEnv, 'manifest.json')), true);
   assert.equal((await inspectToolDocumentPackage('skillclaw', { homeDir: envHome })).status, 'complete');
 

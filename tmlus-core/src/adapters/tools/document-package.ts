@@ -9,7 +9,7 @@ import type {
 } from '../../core/types.js';
 import { downloadGitHubPaths } from './github-skill-source.js';
 
-const SKILLCLAW_REQUIRED_FILES = ['install-runbook.md', 'skillclaw-help.md', 'tml-team-config-guide.md', 'manifest.json'];
+const SKILLCLAW_REQUIRED_FILES = ['install-runbook.md', 'skillclaw-help.md', 'manifest.json'];
 
 export interface ToolDocumentPackageManifest {
   id: string;
@@ -83,8 +83,7 @@ export async function inspectToolDocumentPackage(
   }
 
   const manifest = await readManifest(toolPath);
-  const manifestFiles = manifest?.files?.length ? manifest.files : requiredFiles;
-  const expectedFiles = [...new Set([...requiredFiles, ...manifestFiles])];
+  const expectedFiles = [...new Set(requiredFiles)];
   const missingFiles: string[] = [];
 
   for (const file of expectedFiles) {
@@ -102,9 +101,9 @@ export async function inspectToolDocumentPackage(
   };
 }
 
-async function missingRequiredFiles(packagePath: string): Promise<string[]> {
+async function missingRequiredFiles(packagePath: string, requiredFiles = SKILLCLAW_REQUIRED_FILES): Promise<string[]> {
   const missing: string[] = [];
-  for (const file of SKILLCLAW_REQUIRED_FILES) {
+  for (const file of requiredFiles) {
     if (!await isFile(path.join(packagePath, file))) {
       missing.push(file);
     }
@@ -113,9 +112,9 @@ async function missingRequiredFiles(packagePath: string): Promise<string[]> {
   return missing;
 }
 
-async function copyValidatedPackage(sourcePath: string, destinationPath: string): Promise<void> {
+async function copyValidatedPackage(sourcePath: string, destinationPath: string, requiredFiles = SKILLCLAW_REQUIRED_FILES): Promise<void> {
   await mkdir(destinationPath, { recursive: true });
-  for (const file of SKILLCLAW_REQUIRED_FILES) {
+  for (const file of requiredFiles) {
     await cp(path.join(sourcePath, file), path.join(destinationPath, file), {
       force: true,
       recursive: false
@@ -213,7 +212,7 @@ export async function prepareToolDocumentPackage(
     }
 
     const manifest = await readManifest(temporaryPath);
-    const missing = await missingRequiredFiles(temporaryPath);
+    const missing = await missingRequiredFiles(temporaryPath, includePaths);
     if (!manifest || missing.length) {
       pushAction({
         label: 'SkillClaw docs',
@@ -224,7 +223,7 @@ export async function prepareToolDocumentPackage(
       return { tool, actions };
     }
 
-    await copyValidatedPackage(temporaryPath, envPath);
+    await copyValidatedPackage(temporaryPath, envPath, includePaths);
   } catch (error) {
     pushAction({
       label: 'SkillClaw docs',
@@ -260,7 +259,7 @@ export async function prepareToolDocumentPackage(
 
 export async function readToolDocument(
   toolId: string,
-  fileName: 'install-runbook.md' | 'skillclaw-help.md' | 'tml-team-config-guide.md',
+  fileName: 'install-runbook.md' | 'skillclaw-help.md',
   options: { homeDir?: string; envRoot?: string } = {}
 ): Promise<{ path: string; content: string }> {
   const filePath = path.join(resolveToolEnvPath(toolId, options), fileName);

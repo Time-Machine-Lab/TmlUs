@@ -26,7 +26,7 @@ export const TOOL_CATALOG: ToolDefinition[] = [
       strategy: 'document-package',
       documentPackageId: 'skillclaw',
       remoteSource: 'github:Time-Machine-Lab/TmlUs/data/tools/skillclaw',
-      includePaths: ['install-runbook.md', 'skillclaw-help.md', 'tml-team-config-guide.md', 'manifest.json']
+      includePaths: ['install-runbook.md', 'skillclaw-help.md', 'manifest.json']
     },
     adapter: 'document-package',
     supportedEnvironmentIds: [],

@@ -96,7 +96,7 @@ export async function prepareToolDocuments(
 
 export async function readPreparedToolDocument(
   tool: ToolDefinition,
-  fileName: 'install-runbook.md' | 'skillclaw-help.md' | 'tml-team-config-guide.md'
+  fileName: 'install-runbook.md' | 'skillclaw-help.md'
 ): Promise<{ path: string; content: string }> {
   return readToolDocument(tool.id, fileName);
 }
