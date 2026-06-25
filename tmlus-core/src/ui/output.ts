@@ -19,6 +19,12 @@ export interface OutputOptions {
   quiet?: boolean;
 }
 
+export interface RuntimeSummary {
+  status: 'success' | 'partial' | 'failed';
+  title: string;
+  lines: string[];
+}
+
 interface ProgressStream {
   isTTY?: boolean;
   write(chunk: string): unknown;
@@ -214,6 +220,18 @@ export function renderToolCatalogPage(page = 1, pageSize = 8): void {
 }
 
 export function renderToolInstallSummary(result: ToolInstallResult, options: OutputOptions = {}): void {
+  if (options.quiet) {
+    for (const action of result.actions) {
+      const target = action.target ? ` ${action.target}` : '';
+      const [firstLine, ...restLines] = action.message.split(/\r?\n/);
+      console.log(`${action.status}: ${action.label}${target} - ${firstLine}`);
+      for (const line of restLines) {
+        console.log(line);
+      }
+    }
+    return;
+  }
+
   printSection('Tool install result', options);
 
   for (const action of result.actions) {
@@ -223,7 +241,60 @@ export function renderToolInstallSummary(result: ToolInstallResult, options: Out
         ? paint('-', color.gold, options)
         : paint('ok', color.pink, options);
     const target = action.target ? `  ${action.target}` : '';
-    printInfo(`${paint('|', color.violet, options)}  ${icon} [${action.status}] ${action.label}${target}  ${action.message}`, options);
+    const [firstLine, ...restLines] = action.message.split(/\r?\n/);
+    printInfo(`${paint('|', color.violet, options)}  ${icon} [${action.status}] ${action.label}${target}  ${firstLine}`, options);
+    for (const line of restLines) {
+      printInfo(`${paint('|', color.violet, options)}      ${line}`, options);
+    }
+  }
+}
+
+export function renderToolPreparedDocument(filePath: string, content: string, options: OutputOptions = {}): void {
+  if (options.quiet) {
+    console.log(filePath);
+    return;
+  }
+
+  printSection(`Prepared document: ${filePath}`, options);
+  console.log(content);
+}
+
+export function renderSkillClawHelpPrompt(helpPath: string, options: OutputOptions = {}): void {
+  const prompt = `请基于 ${helpPath} 给我提供skillclaw的帮助`;
+
+  if (options.quiet) {
+    console.log(helpPath);
+    console.log(prompt);
+    return;
+  }
+
+  printSection('如何使用 SkillClaw', options);
+  printInfo(`${paint('|', color.violet, options)}  skillclaw-help.md: ${helpPath}`, options);
+  printInfo(`${paint('|', color.violet, options)}  把下面这段提示词复制给 Agent：`, options);
+  printInfo('', options);
+  printInfo(paint('╔════════════════════ COPY THIS PROMPT ════════════════════╗', color.gold, options), options);
+  printInfo(`${paint('║', color.gold, options)} ${paint(prompt, color.white, options)}`, options);
+  printInfo(paint('╚═══════════════════════════════════════════════════════════╝', color.gold, options), options);
+}
+
+export function renderRuntimeSummary(result: RuntimeSummary, options: OutputOptions = {}): void {
+  if (options.quiet) {
+    console.log(`${result.status}: ${result.title}`);
+    for (const line of result.lines) {
+      console.log(line);
+    }
+    return;
+  }
+
+  printSection(result.title, options);
+  const icon = result.status === 'success'
+    ? paint('ok', color.mint, options)
+    : result.status === 'partial'
+      ? paint('!', color.gold, options)
+      : paint('x', color.pink, options);
+  printInfo(`${paint('|', color.violet, options)}  ${icon} [${result.status}]`, options);
+  for (const line of result.lines) {
+    printInfo(`${paint('|', color.violet, options)}    ${line}`, options);
   }
 }
 
@@ -256,7 +327,11 @@ export function renderToolInstallProgress(event: ToolInstallProgressEvent, optio
         ? paint('-', color.gold, options)
         : paint('ok', color.pink, options);
     const target = action.target ? `  ${action.target}` : '';
-    printInfo(`${paint('|', color.violet, options)}      ${icon} [${action.status}] ${action.label}${target}  ${action.message}`, options);
+    const [firstLine, ...restLines] = action.message.split(/\r?\n/);
+    printInfo(`${paint('|', color.violet, options)}      ${icon} [${action.status}] ${action.label}${target}  ${firstLine}`, options);
+    for (const line of restLines) {
+      printInfo(`${paint('|', color.violet, options)}          ${line}`, options);
+    }
     return;
   }
 

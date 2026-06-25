@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
@@ -8,6 +8,11 @@ import { promisify } from 'node:util';
 import { AI_IDE_ENVIRONMENTS } from '../dist/catalog/environments.js';
 import { findToolById, TOOL_CATALOG } from '../dist/catalog/tools.js';
 import { installCodeGraphTool } from '../dist/adapters/tools/codegraph.js';
+import {
+  inspectToolDocumentPackage,
+  prepareToolDocumentPackage,
+  resolveToolEnvRoot
+} from '../dist/adapters/tools/document-package.js';
 import { selectionRenderTestApi } from '../dist/ui/selection.js';
 
 const execFileAsync = promisify(execFile);
@@ -55,7 +60,11 @@ function commandRunner(commands) {
 
 assert.equal(findToolById('codegraph').id, 'codegraph');
 assert.equal(findToolById('cg').id, 'codegraph');
+assert.equal(findToolById('skillclaw').id, 'skillclaw');
+assert.equal(findToolById('sc').id, 'skillclaw');
 assert.equal(TOOL_CATALOG.some((tool) => tool.id === 'codegraph'), true);
+assert.equal(TOOL_CATALOG.some((tool) => tool.id === 'skillclaw'), true);
+assert.equal(findToolById('skillclaw').installer.strategy, 'document-package');
 
 const renderedToolLines = selectionRenderTestApi.normalizeFrameLines([
   'Tools',
@@ -68,12 +77,55 @@ const workspace = await mkdtemp(path.join(tmpdir(), 'tmlus-tools-'));
 try {
   const list = await run(['tools'], workspace);
   assert.match(list.stdout, /CodeGraph/);
+  assert.match(list.stdout, /SkillClaw/);
   assert.match(list.stdout, /codegraph/);
+  assert.match(list.stdout, /skillclaw/);
   assert.match(list.stdout, /CodeGraph\s+\S+\s+Local code intelligence/);
 
   const unknown = await runExpectFail(['tools', 'not-real'], workspace);
   assert.match(unknown.stderr, /Unknown Tool/);
   assert.match(unknown.stderr, /codegraph/);
+  assert.match(unknown.stderr, /skillclaw/);
+
+  const envHome = await mkdtemp(path.join(tmpdir(), 'tmlus-tool-env-home-'));
+  assert.equal(resolveToolEnvRoot({ homeDir: envHome }), path.join(envHome, '.tmlus', 'env'));
+  const skillclaw = findToolById('skillclaw');
+  const remoteFixturePath = await mkdtemp(path.join(tmpdir(), 'tmlus-skillclaw-remote-fixture-'));
+  const skillclawSourcePath = path.resolve('..', 'data', 'tools', 'skillclaw');
+  for (const fileName of ['install-runbook.md', 'skillclaw-help.md', 'tml-team-config-guide.md', 'manifest.json']) {
+    await cp(path.join(skillclawSourcePath, fileName), path.join(remoteFixturePath, fileName));
+  }
+  const prepared = await prepareToolDocumentPackage(skillclaw, {
+    homeDir: envHome,
+    downloader: async (_source, _includePaths, destinationPath) => {
+      for (const fileName of ['install-runbook.md', 'skillclaw-help.md', 'tml-team-config-guide.md', 'manifest.json']) {
+        await cp(path.join(remoteFixturePath, fileName), path.join(destinationPath, fileName));
+      }
+      return true;
+    }
+  });
+  assert.equal(
+    prepared.actions.some((action) => action.label === 'SkillClaw docs' && action.status === 'prepared'),
+    true,
+    JSON.stringify(prepared.actions, null, 2)
+  );
+  const skillclawEnv = path.join(envHome, '.tmlus', 'env', 'skillclaw');
+  assert.equal(existsSync(path.join(skillclawEnv, 'install-runbook.md')), true);
+  assert.equal(existsSync(path.join(skillclawEnv, 'skillclaw-help.md')), true);
+  assert.equal(existsSync(path.join(skillclawEnv, 'tml-team-config-guide.md')), true);
+  assert.equal(existsSync(path.join(skillclawEnv, 'manifest.json')), true);
+  assert.equal((await inspectToolDocumentPackage('skillclaw', { homeDir: envHome })).status, 'complete');
+
+  await rm(path.join(skillclawEnv, 'skillclaw-help.md'), { force: true });
+  assert.equal((await inspectToolDocumentPackage('skillclaw', { homeDir: envHome })).status, 'incomplete');
+
+  const failedRemoteHome = await mkdtemp(path.join(tmpdir(), 'tmlus-tool-env-remote-fail-home-'));
+  const failedRemote = await prepareToolDocumentPackage(skillclaw, {
+    homeDir: failedRemoteHome,
+    downloader: async () => false
+  });
+  assert.equal(failedRemote.actions.some((action) => action.label === 'SkillClaw docs' && action.status === 'failed'), true);
+  assert.equal((await inspectToolDocumentPackage('skillclaw', { homeDir: failedRemoteHome })).status, 'incomplete');
 
   const tool = findToolById('codegraph');
   const project = await mkdtemp(path.join(tmpdir(), 'tmlus-codegraph-adapter-'));

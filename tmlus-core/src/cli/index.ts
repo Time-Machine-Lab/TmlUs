@@ -11,7 +11,11 @@ import {
   defaultTools,
   defaultToolTargets,
   installTool,
+  isToolDocumentPackagePrepared,
+  prepareToolDocuments,
+  readPreparedToolDocument,
   resolveToolIds,
+  toolRequiresIdeTargets,
   toolInstallHasFailure,
   unknownToolMessage
 } from '../app/tool-install.js';
@@ -33,6 +37,11 @@ import {
 import { renderHelp } from './command-registry.js';
 import { renderStartupBanner } from './banner.js';
 import {
+  inspectSkillClawProxy,
+  startSkillClawProxy,
+  stopSkillClawProxy
+} from '../adapters/tools/skillclaw-runtime.js';
+import {
   isQuiet,
   parseLanguage,
   printInfo,
@@ -42,6 +51,8 @@ import {
   renderSkillInstallSummary,
   renderSkillNameList,
   renderSkillSelectionHint,
+  renderRuntimeSummary,
+  renderSkillClawHelpPrompt,
   renderTmlDocsStructureSummary,
   renderTmlusRefreshSummary,
   renderTmlusUpdateSummary,
@@ -59,6 +70,7 @@ import {
   selectSearchSourceIds,
   selectSkillIds,
   selectSkillTargetEnvironmentIds,
+  selectToolDocumentAction,
   selectToolId,
   selectToolTargetEnvironmentIds,
   selectWorkModeId
@@ -432,6 +444,98 @@ async function runTools(): Promise<void> {
     return;
   }
 
+  const tool = resolvedTools.tools[0];
+  let documentAction = toolIds[1]?.trim().toLowerCase();
+  if (tool.installer.strategy === 'document-package') {
+    if (!documentAction && await isToolDocumentPackagePrepared(tool) && process.stdout.isTTY && process.stdin.isTTY) {
+      const proxyState = tool.id === 'skillclaw'
+        ? await inspectSkillClawProxy()
+        : undefined;
+      const selectedAction = await selectToolDocumentAction(tool, {
+        skillclawProxyRunning: proxyState?.running
+      });
+      if (selectedAction === SELECTION_CANCELLED) {
+        return;
+      }
+
+      const selectedDocumentActions = selectedAction ?? [];
+      documentAction = selectedDocumentActions[0]?.trim().toLowerCase();
+      if (!documentAction) {
+        return;
+      }
+    }
+
+    if (documentAction === 'start' || documentAction === 'start-proxy') {
+      if (!await isToolDocumentPackagePrepared(tool)) {
+        const result = await prepareToolDocuments(tool, {
+          onProgress: (event) => renderToolInstallProgress(event, { quiet })
+        });
+        if (quiet) {
+          renderToolInstallSummary(result, { quiet });
+        }
+        if (toolInstallHasFailure(result)) {
+          process.exitCode = 1;
+          return;
+        }
+      }
+
+      const result = await startSkillClawProxy();
+      renderRuntimeSummary(result, { quiet });
+      if (result.status === 'failed') {
+        process.exitCode = 1;
+      }
+      return;
+    }
+
+    if (documentAction === 'stop' || documentAction === 'stop-proxy') {
+      const result = await stopSkillClawProxy();
+      renderRuntimeSummary(result, { quiet });
+      if (result.status === 'failed') {
+        process.exitCode = 1;
+      }
+      return;
+    }
+
+    if (documentAction === 'help' || documentAction === 'usage' || documentAction === 'howto') {
+      if (!await isToolDocumentPackagePrepared(tool)) {
+        const result = await prepareToolDocuments(tool, {
+          onProgress: (event) => renderToolInstallProgress(event, { quiet })
+        });
+        if (quiet) {
+          renderToolInstallSummary(result, { quiet });
+        }
+        if (toolInstallHasFailure(result)) {
+          process.exitCode = 1;
+          return;
+        }
+      }
+
+      const document = await readPreparedToolDocument(tool, 'skillclaw-help.md');
+      renderSkillClawHelpPrompt(document.path, { quiet });
+      return;
+    }
+
+    const shouldPrepareDocuments = !documentAction || documentAction === 'refresh' || documentAction === 'reinstall';
+    if (!shouldPrepareDocuments) {
+      console.error(`Unsupported SkillClaw action: ${documentAction}`);
+      console.error('Supported actions: reinstall, start, stop, help');
+      process.exitCode = 1;
+      return;
+    }
+
+    const result = await prepareToolDocuments(tool, {
+      force: documentAction === 'refresh' || documentAction === 'reinstall',
+      onProgress: (event) => renderToolInstallProgress(event, { quiet })
+    });
+    if (quiet) {
+      renderToolInstallSummary(result, { quiet });
+    }
+    if (toolInstallHasFailure(result)) {
+      process.exitCode = 1;
+    }
+    return;
+  }
+
   const targetResolution = explicitIdeNames.length
     ? resolveEnvironmentNames(explicitIdeNames)
     : { environments: [], unknown: [] };
@@ -443,7 +547,7 @@ async function runTools(): Promise<void> {
   }
 
   let targetEnvironments = targetResolution.environments;
-  if (!explicitIdeNames.length && process.stdout.isTTY && process.stdin.isTTY) {
+  if (toolRequiresIdeTargets(tool) && !explicitIdeNames.length && process.stdout.isTTY && process.stdin.isTTY) {
     const selected = await selectToolTargetEnvironmentIds(await getAllEnvironmentStatuses(projectRoot));
     if (selected === SELECTION_CANCELLED) {
       return;
@@ -460,11 +564,11 @@ async function runTools(): Promise<void> {
     }
 
     targetEnvironments = selectedResolution.environments;
-  } else if (!explicitIdeNames.length) {
+  } else if (toolRequiresIdeTargets(tool) && !explicitIdeNames.length) {
     targetEnvironments = await defaultToolTargets(projectRoot);
   }
 
-  const result = await installTool(projectRoot, resolvedTools.tools[0], targetEnvironments, {
+  const result = await installTool(projectRoot, tool, targetEnvironments, {
     onProgress: (event) => renderToolInstallProgress(event, { quiet })
   });
   if (quiet) {

@@ -2,6 +2,11 @@ import { findToolById, TOOL_CATALOG, supportedToolIds } from '../catalog/tools.j
 import type { EnvironmentDefinition, ToolDefinition, ToolInstallProgressEvent, ToolInstallResult } from '../core/types.js';
 import { selectDefaultIdeTargets } from './ide-init.js';
 import { installCodeGraphTool } from '../adapters/tools/codegraph.js';
+import {
+  inspectToolDocumentPackage,
+  prepareToolDocumentPackage,
+  readToolDocument
+} from '../adapters/tools/document-package.js';
 
 export function resolveToolIds(ids: string[]): { tools: ToolDefinition[]; unknown: string[] } {
   const tools: ToolDefinition[] = [];
@@ -37,6 +42,12 @@ export async function installTool(
     });
   }
 
+  if (tool.adapter === 'document-package') {
+    return prepareToolDocumentPackage(tool, {
+      onProgress: options.onProgress
+    });
+  }
+
   return {
     tool,
     actions: [
@@ -59,6 +70,35 @@ export function defaultTools(): ToolDefinition[] {
 
 export function toolInstallHasFailure(result: ToolInstallResult): boolean {
   return result.actions.some((action) => action.status === 'failed');
+}
+
+export function toolRequiresIdeTargets(tool: ToolDefinition): boolean {
+  return tool.installer.strategy === 'external-cli' && tool.supportedEnvironmentIds.length > 0;
+}
+
+export async function isToolDocumentPackagePrepared(tool: ToolDefinition): Promise<boolean> {
+  if (tool.installer.strategy !== 'document-package') {
+    return false;
+  }
+
+  return (await inspectToolDocumentPackage(tool.id)).status === 'complete';
+}
+
+export async function prepareToolDocuments(
+  tool: ToolDefinition,
+  options: { force?: boolean; onProgress?: (event: ToolInstallProgressEvent) => void } = {}
+): Promise<ToolInstallResult> {
+  return prepareToolDocumentPackage(tool, {
+    force: options.force,
+    onProgress: options.onProgress
+  });
+}
+
+export async function readPreparedToolDocument(
+  tool: ToolDefinition,
+  fileName: 'install-runbook.md' | 'skillclaw-help.md' | 'tml-team-config-guide.md'
+): Promise<{ path: string; content: string }> {
+  return readToolDocument(tool.id, fileName);
 }
 
 export function unknownToolMessage(unknown: string[]): string {

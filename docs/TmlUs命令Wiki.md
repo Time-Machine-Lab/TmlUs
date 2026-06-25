@@ -228,13 +228,18 @@ Skill 目录：
 
 ### 3.8 `tmlus tools`
 
-`tmlus tools` 用于发现并安装 TmlUs 维护的外部工具适配。
+`tmlus tools` 用于发现并安装 TmlUs 维护的外部工具适配，也可以准备 Agent 可读的工具安装说明文档。
 
 ```bash
 tmlus tools
 tmlus tools codegraph
 tmlus tools codegraph --ide codex
 tmlus tools cg --ide codex,claude,cursor
+tmlus tools skillclaw
+tmlus tools skillclaw help
+tmlus tools skillclaw start
+tmlus tools skillclaw stop
+tmlus tools skillclaw reinstall
 ```
 
 参数与选项：
@@ -249,10 +254,14 @@ tmlus tools cg --ide codex,claude,cursor
 | ID | 别名 | 名称 | 适用环境 | 产物 |
 |----|------|------|----------|------|
 | `codegraph` | `cg` | CodeGraph | `codex`, `claude`, `cursor` | `.codegraph/`、对应 AI IDE 的 MCP 配置 |
+| `skillclaw` | `sc`, `claw` | SkillClaw | 无需选择 IDE | `~/.tmlus/env/skillclaw` 文档环境 |
 
 行为说明：
 
 - CodeGraph 使用外部 CLI `codegraph`，安装包为 `@colbymchenry/codegraph`。
+- SkillClaw 不由 TmlUs 直接安装；TmlUs 只准备 `install-runbook.md`、`skillclaw-help.md`、`tml-team-config-guide.md` 和 `manifest.json`，用户可把 Runbook 交给 Agent 执行真实安装与配置。
+- SkillClaw 文档环境准备完成后，交互菜单只保留三类操作：重新安装（重新拉取 env 文档包）、启动/关闭 SkillClaw 代理、如何使用 SkillClaw（展示 `skillclaw-help.md` 路径与可复制给 Agent 的提示词）。
+- `tmlus tools skillclaw start` 会以 daemon 模式启动本地 client proxy，并把 Codex 配置切换到 SkillClaw 代理；`tmlus tools skillclaw stop` 会关闭代理并把 Codex 配置切回上游服务。
 - 如果未传 `--ide`，交互式终端会提示选择目标环境；非交互场景会使用当前项目中已存在且受支持的环境。
 - 工具安装失败时会输出失败步骤和可手动执行的修复命令。
 

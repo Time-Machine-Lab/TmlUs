@@ -23,7 +23,7 @@ TmlUs 是 TML 团队的 AI 开发工作台。它把项目初始化、AI IDE 环�
 | `tmlus tml-spec` | 创建或修复 `docs/`、`docs/design/`、`docs/spec/` 等 TML 文档目录 | 项目需要接入 TML 文档规范 |
 | `tmlus skills` | 浏览、选择并安装 TML 维护的 AI Skills | 想给 Agent 装上团队认可的能力包 |
 | `tmlus skills search` | 从远程来源搜索可安装 Skill | 本地目录不够用，想探索新的 Skill |
-| `tmlus tools` | 浏览并安装 TmlUs 维护的外部工具适配，例如 CodeGraph | 想给 Agent 接入本地代码索引或外部工具 |
+| `tmlus tools` | 浏览并安装外部工具适配，或准备 Agent 可读工具说明，例如 CodeGraph、SkillClaw | 想给 Agent 接入本地代码索引、外部工具或工具安装说明 |
 | `tmlus work-mode openspec` | 为当前项目初始化 OpenSpec 工作模式 | 需要用提案、规格和任务驱动开发 |
 | `tmlus help` | 查看所有命令说明和示例 | 忘记咒语时快速翻书 |
 | `tmlus version` | 输出当前 CLI 版本 | 检查本地安装版本 |

@@ -63,12 +63,15 @@ export interface SkillDefinition {
 
 export type ToolRecommendation = 1 | 2 | 3 | 4 | 5;
 
-export type ToolInstallStrategy = 'external-cli';
+export type ToolInstallStrategy = 'external-cli' | 'document-package';
 
 export interface ToolInstallerDefinition {
   strategy: ToolInstallStrategy;
-  command: string;
+  command?: string;
   packageName?: string;
+  documentPackageId?: string;
+  remoteSource?: string;
+  includePaths?: string[];
 }
 
 export interface ToolDefinition {
@@ -81,10 +84,13 @@ export interface ToolDefinition {
   adapter: string;
   supportedEnvironmentIds: string[];
   projectArtifacts: string[];
+  requiresEnv?: boolean;
 }
 
 export type ToolInstallActionStatus =
   | 'installed'
+  | 'prepared'
+  | 'refreshed'
   | 'existing'
   | 'initialized'
   | 'configured'

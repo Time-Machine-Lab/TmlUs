@@ -135,18 +135,23 @@ export const COMMAND_REGISTRY: CommandMetadata[] = [
       en: 'External Tool discovery and installation'
     },
     description: {
-      zh: 'List maintained external tools and install or adapt one tool for the current project and AI IDE environment.',
-      en: 'List maintained external tools and install or adapt one tool for the current project and AI IDE environment.'
+      zh: 'List maintained external tools, install/adapt direct tools, or prepare Agent-readable setup documents.',
+      en: 'List maintained external tools, install/adapt direct tools, or prepare Agent-readable setup documents.'
     },
     examples: [
       'tmlus tools',
       'tmlus tools codegraph',
-      'tmlus tools codegraph --ide codex'
+      'tmlus tools codegraph --ide codex',
+      'tmlus tools skillclaw',
+      'tmlus tools skillclaw start',
+      'tmlus tools skillclaw stop',
+      'tmlus tools skillclaw help',
+      'tmlus tools skillclaw reinstall'
     ],
     parameterNotes: [
       {
-        zh: 'Pass a Tool ID such as codegraph to skip selection and start that Tool flow directly.',
-        en: 'Pass a Tool ID such as codegraph to skip selection and start that Tool flow directly.'
+        zh: 'Pass a Tool ID such as codegraph to install/adapt a direct Tool, or skillclaw to prepare Agent-readable setup documents and manage the local SkillClaw proxy.',
+        en: 'Pass a Tool ID such as codegraph to install/adapt a direct Tool, or skillclaw to prepare Agent-readable setup documents and manage the local SkillClaw proxy.'
       }
     ]
   },

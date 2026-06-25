@@ -15,6 +15,23 @@ export const TOOL_CATALOG: ToolDefinition[] = [
     adapter: 'codegraph',
     supportedEnvironmentIds: ['codex', 'claude', 'cursor'],
     projectArtifacts: ['.codegraph/']
+  },
+  {
+    id: 'skillclaw',
+    aliases: ['sc', 'claw'],
+    name: 'SkillClaw',
+    purpose: 'Prepare Agent-readable SkillClaw setup and help documents.',
+    recommendation: 4,
+    installer: {
+      strategy: 'document-package',
+      documentPackageId: 'skillclaw',
+      remoteSource: 'github:Time-Machine-Lab/TmlUs/data/tools/skillclaw',
+      includePaths: ['install-runbook.md', 'skillclaw-help.md', 'tml-team-config-guide.md', 'manifest.json']
+    },
+    adapter: 'document-package',
+    supportedEnvironmentIds: [],
+    projectArtifacts: [],
+    requiresEnv: true
   }
 ];
 

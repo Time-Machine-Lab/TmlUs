@@ -960,6 +960,40 @@ export async function selectToolTargetEnvironmentIds(statuses: EnvironmentStatus
   });
 }
 
+export async function selectToolDocumentAction(
+  tool: ToolDefinition,
+  options: { skillclawProxyRunning?: boolean } = {}
+): Promise<SelectionResult> {
+  const proxyRunning = options.skillclawProxyRunning === true;
+
+  return singleSelect({
+    title: `${tool.name} Docs`,
+    items: [
+      {
+        id: 'reinstall',
+        label: '重新安装',
+        tone: 'ready',
+        detail: '重新从 GitHub 拉取 SkillClaw env 环境数据，并覆盖当前 env 中的文档包。'
+      },
+      {
+        id: proxyRunning ? 'stop-proxy' : 'start-proxy',
+        label: proxyRunning ? '关闭 SkillClaw 代理' : '启动 SkillClaw 代理',
+        tone: proxyRunning ? 'partial' : 'ready',
+        detail: proxyRunning
+          ? '关闭 client proxy，并使用脚本把 Codex 配置切回上游服务。'
+          : '使用 daemon 模式启动 client proxy，并使用脚本把 Codex 配置切换到 SkillClaw 代理。'
+      },
+      {
+        id: 'help',
+        label: '如何使用 SkillClaw',
+        tone: 'skill',
+        detail: '展示 skillclaw-help.md 的绝对路径，并给出可复制给 Agent 的使用提示词。'
+      }
+    ],
+    pageSize: 6
+  });
+}
+
 export async function selectWorkModeId(modes: WorkModeDefinition[]): Promise<SelectionResult> {
   return singleSelect({
     title: 'Work Mode',

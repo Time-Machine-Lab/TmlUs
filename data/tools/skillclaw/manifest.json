@@ -1,0 +1,12 @@
+{
+    "id":  "skillclaw",
+    "version":  3,
+    "updatedAt":  "2026-06-25T16:01:52.137Z",
+    "source":  "github:Time-Machine-Lab/TmlUs/data/tools/skillclaw",
+    "files":  [
+                  "install-runbook.md",
+                  "skillclaw-help.md",
+                  "tml-team-config-guide.md",
+                  "manifest.json"
+              ]
+}
