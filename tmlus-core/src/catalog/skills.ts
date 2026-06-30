@@ -49,6 +49,33 @@ export const SKILL_CATALOG: SkillDefinition[] = [
     targets: COMMON_SKILL_TARGETS
   },
   {
+    id: 'wewrite',
+    aliases: ['wechat-writing', 'wechat-article', 'gongzhonghao'],
+    name: 'WeWrite',
+    source: 'github:oaker-io/wewrite',
+    category: '内容创作',
+    description: '微信公众号文章全流程 AI Skill，覆盖热点抓取、选题、写作、SEO、封面配图、微信排版和草稿箱发布。',
+    installer: {
+      strategy: 'github-root-skill',
+      includePaths: [
+        'SKILL.md',
+        'README.md',
+        'LICENSE',
+        'VERSION',
+        'requirements.txt',
+        'install.sh',
+        'config.example.yaml',
+        'style.example.yaml',
+        'writing-config.example.yaml',
+        'references',
+        'scripts',
+        'toolkit',
+        'personas'
+      ]
+    },
+    targets: COMMON_SKILL_TARGETS
+  },
+  {
     id: 'frontend-slides',
     name: 'Frontend Slides',
     source: 'github:zarazhangrui/frontend-slides',

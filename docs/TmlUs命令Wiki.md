@@ -210,6 +210,7 @@ Skill 目录：
 | `skill-creator` | Skill Creator | Skill创作 | 创建、评估和持续优化 AI Skill |
 | `tml-docs-spec-generate` | TML Docs Spec Generate | TML规范 | 基于 TML-Docs-Spec 模板生成标准化文档 |
 | `humanizer-zh` | Humanizer-zh | 内容创作 | 中文文本人性化编辑，减少 AI 写作痕迹并优化表达节奏 |
+| `wewrite` | WeWrite | 内容创作 | 微信公众号文章全流程写作、排版和草稿箱发布 |
 | `frontend-slides` | Frontend Slides | 前端开发 | 生成高质量 HTML 演示文稿 |
 | `gsap-skills` | GSAP Skills | 前端开发 | 安装 GSAP 官方技能集合 |
 | `html-anything` | Html Anything | 前端开发 | 安装 HTML Anything 模板技能集合 |

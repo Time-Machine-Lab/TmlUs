@@ -26,6 +26,13 @@ The Skill catalog MUST be loaded from the official remote catalog by default, wi
 - **THEN** `tmlus skills` can display `Humanizer-zh`
 - **THEN** its category is `内容创作`
 
+#### Scenario: WeWrite appears as content creation Skill
+
+- **WHEN** the official remote catalog or bundled fallback catalog is available
+- **THEN** `tmlus skills` can display `WeWrite`
+- **THEN** its category is `内容创作`
+- **THEN** users can install it through the existing Skill installation flow without a WeWrite-specific installer
+
 ### Requirement: Interactive Skill listing and selection
 
 TmlUs SHALL support interactive Skill discovery through `tmlus skills`.
