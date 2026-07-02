@@ -1,6 +1,6 @@
 import * as readline from 'node:readline';
 import { stdin, stdout } from 'node:process';
-import type { EnvironmentStatus, SkillDefinition, ToolDefinition, WorkModeDefinition } from '../core/types.js';
+import type { EnvironmentStatus, SkillDefinition, ToolDefinition, ToolPromptActionDefinition, WorkModeDefinition } from '../core/types.js';
 import type { SkillSearchSource } from '../catalog/skill-catalog.js';
 import { canPrompt } from './prompt.js';
 
@@ -990,6 +990,22 @@ export async function selectToolDocumentAction(
         detail: '展示 skillclaw-help.md 的绝对路径，并给出可复制给 Agent 的使用提示词。'
       }
     ],
+    pageSize: 6
+  });
+}
+
+export async function selectToolPromptAction(
+  tool: ToolDefinition,
+  actions: ToolPromptActionDefinition[]
+): Promise<SelectionResult> {
+  return singleSelect({
+    title: `${tool.name} Prompt`,
+    items: actions.map((action) => ({
+      id: action.id,
+      label: action.label,
+      tone: 'skill',
+      detail: action.description
+    })),
     pageSize: 6
   });
 }

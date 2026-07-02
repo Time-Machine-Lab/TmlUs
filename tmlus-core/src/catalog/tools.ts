@@ -32,6 +32,35 @@ export const TOOL_CATALOG: ToolDefinition[] = [
     supportedEnvironmentIds: [],
     projectArtifacts: [],
     requiresEnv: true
+  },
+  {
+    id: 'agent-reach',
+    aliases: ['reach', 'ar'],
+    name: 'Agent Reach',
+    purpose: 'Show official Agent Reach install and update prompts for AI agents.',
+    recommendation: 4,
+    installer: {
+      strategy: 'prompt-actions',
+      promptActions: [
+        {
+          id: 'install',
+          aliases: ['setup'],
+          label: 'Install Agent Reach',
+          description: 'Show the official Agent Reach installation prompt.',
+          prompt: '帮我安装 Agent Reach：https://raw.githubusercontent.com/Panniantong/agent-reach/main/docs/install.md'
+        },
+        {
+          id: 'update',
+          aliases: ['upgrade'],
+          label: 'Update Agent Reach',
+          description: 'Show the official Agent Reach update prompt.',
+          prompt: '帮我更新 Agent Reach：https://raw.githubusercontent.com/Panniantong/agent-reach/main/docs/update.md'
+        }
+      ]
+    },
+    adapter: 'prompt-actions',
+    supportedEnvironmentIds: [],
+    projectArtifacts: []
   }
 ];
 

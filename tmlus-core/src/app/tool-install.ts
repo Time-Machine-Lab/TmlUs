@@ -1,5 +1,5 @@
 import { findToolById, TOOL_CATALOG, supportedToolIds } from '../catalog/tools.js';
-import type { EnvironmentDefinition, ToolDefinition, ToolInstallProgressEvent, ToolInstallResult } from '../core/types.js';
+import type { EnvironmentDefinition, ToolDefinition, ToolInstallProgressEvent, ToolInstallResult, ToolPromptActionDefinition } from '../core/types.js';
 import { selectDefaultIdeTargets } from './ide-init.js';
 import { installCodeGraphTool } from '../adapters/tools/codegraph.js';
 import {
@@ -74,6 +74,17 @@ export function toolInstallHasFailure(result: ToolInstallResult): boolean {
 
 export function toolRequiresIdeTargets(tool: ToolDefinition): boolean {
   return tool.installer.strategy === 'external-cli' && tool.supportedEnvironmentIds.length > 0;
+}
+
+export function findToolPromptAction(tool: ToolDefinition, actionId: string): ToolPromptActionDefinition | undefined {
+  const normalized = actionId.trim().toLowerCase();
+  return tool.installer.promptActions?.find((action) => (
+    action.id === normalized || action.aliases?.includes(normalized)
+  ));
+}
+
+export function supportedToolPromptActions(tool: ToolDefinition): string {
+  return (tool.installer.promptActions ?? []).map((action) => action.id).join(', ');
 }
 
 export async function isToolDocumentPackagePrepared(tool: ToolDefinition): Promise<boolean> {

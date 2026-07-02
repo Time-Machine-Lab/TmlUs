@@ -63,7 +63,15 @@ export interface SkillDefinition {
 
 export type ToolRecommendation = 1 | 2 | 3 | 4 | 5;
 
-export type ToolInstallStrategy = 'external-cli' | 'document-package';
+export type ToolInstallStrategy = 'external-cli' | 'document-package' | 'prompt-actions';
+
+export interface ToolPromptActionDefinition {
+  id: string;
+  aliases?: string[];
+  label: string;
+  description: string;
+  prompt: string;
+}
 
 export interface ToolInstallerDefinition {
   strategy: ToolInstallStrategy;
@@ -72,6 +80,7 @@ export interface ToolInstallerDefinition {
   documentPackageId?: string;
   remoteSource?: string;
   includePaths?: string[];
+  promptActions?: ToolPromptActionDefinition[];
 }
 
 export interface ToolDefinition {

@@ -10,11 +10,13 @@ import { initializeWorkMode, resolveWorkMode, unknownWorkModeMessage, WORK_MODES
 import {
   defaultTools,
   defaultToolTargets,
+  findToolPromptAction,
   installTool,
   isToolDocumentPackagePrepared,
   prepareToolDocuments,
   readPreparedToolDocument,
   resolveToolIds,
+  supportedToolPromptActions,
   toolRequiresIdeTargets,
   toolInstallHasFailure,
   unknownToolMessage
@@ -54,6 +56,7 @@ import {
   renderRuntimeSummary,
   renderSkillClawHelpPrompt,
   renderTmlDocsStructureSummary,
+  renderToolPromptAction,
   renderTmlusRefreshSummary,
   renderTmlusUpdateSummary,
   renderToolCatalogPage,
@@ -72,6 +75,7 @@ import {
   selectSkillTargetEnvironmentIds,
   selectToolDocumentAction,
   selectToolId,
+  selectToolPromptAction,
   selectToolTargetEnvironmentIds,
   selectWorkModeId
 } from '../ui/selection.js';
@@ -445,6 +449,42 @@ async function runTools(): Promise<void> {
   }
 
   const tool = resolvedTools.tools[0];
+  if (tool.installer.strategy === 'prompt-actions') {
+    let promptActionId = toolIds[1]?.trim().toLowerCase();
+    const promptActions = tool.installer.promptActions ?? [];
+
+    if (!promptActionId && process.stdout.isTTY && process.stdin.isTTY) {
+      const selectedAction = await selectToolPromptAction(tool, promptActions);
+      if (selectedAction === SELECTION_CANCELLED) {
+        return;
+      }
+
+      const selectedPromptActions = selectedAction ?? [];
+      promptActionId = selectedPromptActions[0]?.trim().toLowerCase();
+      if (!promptActionId) {
+        return;
+      }
+    }
+
+    if (!promptActionId) {
+      console.error(`Missing ${tool.name} action.`);
+      console.error(`Supported actions: ${supportedToolPromptActions(tool)}`);
+      process.exitCode = 1;
+      return;
+    }
+
+    const promptAction = findToolPromptAction(tool, promptActionId);
+    if (!promptAction) {
+      console.error(`Unsupported ${tool.name} action: ${promptActionId}`);
+      console.error(`Supported actions: ${supportedToolPromptActions(tool)}`);
+      process.exitCode = 1;
+      return;
+    }
+
+    renderToolPromptAction(tool.name, promptAction.label, promptAction.prompt, { quiet });
+    return;
+  }
+
   let documentAction = toolIds[1]?.trim().toLowerCase();
   if (tool.installer.strategy === 'document-package') {
     if (!documentAction && await isToolDocumentPackagePrepared(tool) && process.stdout.isTTY && process.stdin.isTTY) {

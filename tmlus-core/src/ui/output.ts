@@ -277,6 +277,27 @@ export function renderSkillClawHelpPrompt(helpPath: string, options: OutputOptio
   printInfo(paint('╚═══════════════════════════════════════════════════════════╝', color.gold, options), options);
 }
 
+export function renderToolPromptAction(
+  toolName: string,
+  actionLabel: string,
+  prompt: string,
+  options: OutputOptions = {}
+): void {
+  if (options.quiet) {
+    console.log(prompt);
+    return;
+  }
+
+  printSection(`如何使用 ${toolName}`, options);
+  printInfo(`${paint('|', color.violet, options)}  ${actionLabel}`, options);
+  printInfo(`${paint('|', color.violet, options)}  TmlUs 只生成提示词，不会安装、更新或配置 ${toolName}。`, options);
+  printInfo(`${paint('|', color.violet, options)}  把下面这段提示词复制给 Agent:`, options);
+  printInfo('', options);
+  printInfo(paint('+---------------- COPY THIS PROMPT ----------------+', color.gold, options), options);
+  printInfo(`${paint('|', color.gold, options)} ${paint(prompt, color.white, options)}`, options);
+  printInfo(paint('+--------------------------------------------------+', color.gold, options), options);
+}
+
 export function renderRuntimeSummary(result: RuntimeSummary, options: OutputOptions = {}): void {
   if (options.quiet) {
     console.log(`${result.status}: ${result.title}`);

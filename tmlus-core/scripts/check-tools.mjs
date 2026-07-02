@@ -62,9 +62,13 @@ assert.equal(findToolById('codegraph').id, 'codegraph');
 assert.equal(findToolById('cg').id, 'codegraph');
 assert.equal(findToolById('skillclaw').id, 'skillclaw');
 assert.equal(findToolById('sc').id, 'skillclaw');
+assert.equal(findToolById('agent-reach').id, 'agent-reach');
+assert.equal(findToolById('reach').id, 'agent-reach');
 assert.equal(TOOL_CATALOG.some((tool) => tool.id === 'codegraph'), true);
 assert.equal(TOOL_CATALOG.some((tool) => tool.id === 'skillclaw'), true);
+assert.equal(TOOL_CATALOG.some((tool) => tool.id === 'agent-reach'), true);
 assert.equal(findToolById('skillclaw').installer.strategy, 'document-package');
+assert.equal(findToolById('agent-reach').installer.strategy, 'prompt-actions');
 
 const renderedToolLines = selectionRenderTestApi.normalizeFrameLines([
   'Tools',
@@ -78,14 +82,30 @@ try {
   const list = await run(['tools'], workspace);
   assert.match(list.stdout, /CodeGraph/);
   assert.match(list.stdout, /SkillClaw/);
+  assert.match(list.stdout, /Agent Reach/);
   assert.match(list.stdout, /codegraph/);
   assert.match(list.stdout, /skillclaw/);
+  assert.match(list.stdout, /agent-reach/);
   assert.match(list.stdout, /CodeGraph\s+\S+\s+Local code intelligence/);
 
   const unknown = await runExpectFail(['tools', 'not-real'], workspace);
   assert.match(unknown.stderr, /Unknown Tool/);
   assert.match(unknown.stderr, /codegraph/);
   assert.match(unknown.stderr, /skillclaw/);
+  assert.match(unknown.stderr, /agent-reach/);
+
+  const agentReachInstall = await run(['tools', 'agent-reach', 'install'], workspace);
+  assert.match(agentReachInstall.stdout, /COPY THIS PROMPT/);
+  assert.match(agentReachInstall.stdout, /Agent Reach/);
+  assert.match(agentReachInstall.stdout, /https:\/\/raw\.githubusercontent\.com\/Panniantong\/agent-reach\/main\/docs\/install\.md/);
+
+  const agentReachUpdate = await run(['tools', 'agent-reach', 'update', '--quiet'], workspace);
+  assert.match(agentReachUpdate.stdout, /https:\/\/raw\.githubusercontent\.com\/Panniantong\/agent-reach\/main\/docs\/update\.md/);
+  assert.doesNotMatch(agentReachUpdate.stdout, /COPY THIS PROMPT/);
+
+  const unsupportedAgentReachAction = await runExpectFail(['tools', 'agent-reach', 'not-real'], workspace);
+  assert.match(unsupportedAgentReachAction.stderr, /Unsupported Agent Reach action: not-real/);
+  assert.match(unsupportedAgentReachAction.stderr, /Supported actions: install, update/);
 
   const envHome = await mkdtemp(path.join(tmpdir(), 'tmlus-tool-env-home-'));
   assert.equal(resolveToolEnvRoot({ homeDir: envHome }), path.join(envHome, '.tmlus', 'env'));
